@@ -1,0 +1,27 @@
+{
+  "slug": "risk-tolerance-questionnaire",
+  "name": "Risk Tolerance Questionnaire",
+  "version": "0.1.0",
+  "summary": "A white-label-ready advisor RTQ that uses PlannerXchange runtime branding and app-data contracts.",
+  "description": "Guide advisors or clients through a structured risk tolerance workflow, render with firm-specific PlannerXchange branding, and save completed responses as governed app-data records tied to PlannerXchange household context.",
+  "priceLabel": "Included",
+  "framework": "react",
+  "entryPoint": "src/plugin.tsx",
+  "permissions": [
+    "tenant.read",
+    "user.read",
+    "branding.read",
+    "legal.read",
+    "canonical.household.read",
+    "canonical.client.summary.read",
+    "app_data.read",
+    "app_data.write"
+  ],
+  "configSchemaVersion": 1,
+  "visibility": "private",
+  "dataPortabilityMode": "plannerxchange_portable",
+  "categories": [
+    "client-onboarding",
+    "risk-profiling"
+  ]
+}

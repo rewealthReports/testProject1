@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "entryPoints": {
+    "src/plugin.tsx": {
+      "file": "assets/plugin-DJkW0Dki.js",
+      "css": [
+        "assets/plugin-C7atBRaj.css"
+      ]
+    }
+  }
+}

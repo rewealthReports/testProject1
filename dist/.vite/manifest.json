@@ -1,0 +1,20 @@
+{
+  "index.html": {
+    "file": "assets/preview-D4flNwZw.js",
+    "name": "preview",
+    "src": "index.html",
+    "isEntry": true,
+    "imports": [
+      "src/plugin.tsx"
+    ]
+  },
+  "src/plugin.tsx": {
+    "file": "assets/plugin-DJkW0Dki.js",
+    "name": "plugin",
+    "src": "src/plugin.tsx",
+    "isEntry": true,
+    "css": [
+      "assets/plugin-C7atBRaj.css"
+    ]
+  }
+}
