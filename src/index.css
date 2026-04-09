@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@media print {
+  /* Hide everything except the report when printing */
+  body > * {
+    display: none;
+  }
+  #rtq-report,
+  #rtq-report * {
+    display: revert;
+  }
+  #rtq-report {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  @page {
+    margin: 1.5cm;
+    size: A4 portrait;
+  }
+}

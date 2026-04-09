@@ -1,0 +1,28 @@
+{
+  "slug": "risk-tolerance-questionnaire",
+  "name": "Risk Tolerance Questionnaire",
+  "version": "0.1.0",
+  "summary": "Send clients a customizable risk tolerance questionnaire, score their answers automatically, and produce a branded PDF report.",
+  "description": "Advisors invite clients to complete a configurable risk tolerance questionnaire. Each question is presented one per page. Answers are scored and mapped to a risk band. A branded, printable report is generated for advisor and client review. Advisors can customize the questionnaire questions and scoring weights.",
+  "priceLabel": "Included",
+  "framework": "react",
+  "entryPoint": "src/plugin.tsx",
+  "permissions": [
+    "tenant.read",
+    "user.read",
+    "canonical.client.summary.read",
+    "canonical.client.sensitive.read",
+    "app_data.read",
+    "app_data.write",
+    "branding.read",
+    "legal.read",
+    "email.send"
+  ],
+  "configSchemaVersion": 1,
+  "visibility": "private",
+  "dataPortabilityMode": "plannerxchange_portable",
+  "categories": [
+    "planning",
+    "client-experience"
+  ]
+}
