@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { RTQAnswer } from "../types/rtq";
+import type { RTQAnswer, RTQInvitation, RTQTemplate } from "../types/rtq";
 import { getTemplate, getInvitationByToken, saveResponse, markInvitationCompleted } from "../lib/store";
 import { scoreQuestionnaire } from "../lib/scoring";
 import type { ShellRuntimeContext } from "../plannerxchange";
@@ -9,13 +9,47 @@ export function RTQFlow({ context }: { context: ShellRuntimeContext }) {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
 
-  const invitation = token ? getInvitationByToken(token) : undefined;
-  const template = getTemplate(context.firmId);
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const [invitation, setInvitation] = useState<RTQInvitation | undefined>();
+  const [template, setTemplate] = useState<RTQTemplate | undefined>();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, RTQAnswer>>({});
   const [submitted, setSubmitted] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!token) { setLoadState("ready"); return; }
+    Promise.all([
+      getInvitationByToken(token),
+      getTemplate(context.firmId),
+    ]).then(([inv, tpl]) => {
+      setInvitation(inv);
+      setTemplate(tpl);
+      setLoadState("ready");
+    }).catch(() => setLoadState("error"));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (loadState === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading…</p>
+      </div>
+    );
+  }
+
+  if (loadState === "error") {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div className="text-center max-w-sm">
+          <p className="text-4xl mb-3">⚠️</p>
+          <h2 className="text-lg font-semibold text-gray-700 mb-1">Something went wrong</h2>
+          <p className="text-sm text-gray-500">Could not load questionnaire. Please try again.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!invitation) {
     return (
@@ -80,7 +114,7 @@ export function RTQFlow({ context }: { context: ShellRuntimeContext }) {
     );
   }
 
-  const questions = template.questions;
+  const questions = template!.questions;
   const total = questions.length;
   const question = questions[currentIndex];
   const selectedChoiceId = answers[question.id]?.choiceId ?? null;
@@ -97,7 +131,7 @@ export function RTQFlow({ context }: { context: ShellRuntimeContext }) {
     if (currentIndex < total - 1) {
       setCurrentIndex((i) => i + 1);
     } else {
-      handleSubmit();
+      void handleSubmit();
     }
   }
 
@@ -105,21 +139,22 @@ export function RTQFlow({ context }: { context: ShellRuntimeContext }) {
     if (currentIndex > 0) setCurrentIndex((i) => i - 1);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
+    if (!invitation || !template) return;
     const answerList = Object.values(answers);
-    const score = scoreQuestionnaire(questions, answerList);
+    const score = scoreQuestionnaire(template.questions, answerList);
 
-    const response = saveResponse({
+    const response = await saveResponse({
       firmId: context.firmId,
-      invitationId: invitation!.id,
-      clientId: invitation!.clientId,
-      clientDisplayName: invitation!.clientDisplayName,
+      invitationId: invitation.id,
+      clientId: invitation.clientId,
+      clientDisplayName: invitation.clientDisplayName,
       answers: answerList,
       score,
       completedAt: new Date().toISOString(),
     });
 
-    markInvitationCompleted(invitation!.id, response.id);
+    await markInvitationCompleted(invitation.id, response.id);
     setResponseId(response.id);
     setSubmitted(true);
   }

@@ -1,19 +1,32 @@
 /**
- * PX API integration layer — approved scope → route mapping:
+ * PX API integration layer — approved scope → live route mapping:
  *
  *   client.summary.read   → GET /client-users, /client-users/{id}
- *   client.sensitive.read → Reserved (no live routes yet; falls back to mock)
  *   branding.read         → GET /branding/current
  *   legal.read            → GET /legal/current
  *   email.send            → POST /app-email/send
  *
- * All protected calls require:
- *   Authorization: Bearer {idToken}
- *   x-plannerxchange-app-installation-id: {appInstallationId}
+ * RUNTIME EGRESS POLICY
+ * ─────────────────────
+ * All runtime HTTP calls in this module target exclusively:
+ *   https://api.plannerxchange.ai
  *
- * When publicationEnvironment === "dev" or idToken is absent, every function
- * falls back to synthetic fixtures / console logging so the full UI remains
- * exercisable without a live PX installation.
+ * No requests are made to any third-party host at runtime.
+ * URLs appearing in package-lock.json (opencollective.com, tidelift.com,
+ * registry.npmjs.org) are npm package funding metadata written by npm itself
+ * — they are not code and are never executed as network calls.
+ *
+ * MOCK / LIVE ISOLATION
+ * ─────────────────────
+ * isLive() is FAIL-CLOSED: it throws hard errors in any non-dev context where
+ * required auth or installation fields are absent. This makes it impossible
+ * for mock fallback code to silently run under a real firm context, and
+ * impossible for synthetic fixtures to be presented as live PX runtime.
+ *
+ * src/dev-context.ts is loaded ONLY by src/main.tsx (local Vite preview).
+ * src/plugin.tsx (the PX shell entry point) never imports dev-context.ts.
+ * The two entry points are mutually exclusive; no synthetic fixture reaches
+ * the PX shell at runtime.
  */
 
 import type { PXClientSensitive, PXClientSummary } from "../types/rtq";
@@ -21,9 +34,30 @@ import type { BrandingProfile, LegalProfile, ShellRuntimeContext } from "../plan
 
 const PX_BASE = "https://api.plannerxchange.ai";
 
-/** True when running inside a real PX shell with a live auth session. */
+/**
+ * Returns true when running in a live PX shell.
+ *
+ * FAIL-CLOSED: throws if publicationEnvironment !== "dev" and required auth
+ * or installation fields are absent. Prevents mock/dev fallbacks from ever
+ * running silently in a real firm context.
+ */
 export function isLive(ctx: ShellRuntimeContext): boolean {
-  return ctx.publicationEnvironment !== "dev" && !!ctx.idToken;
+  if (ctx.publicationEnvironment !== "dev") {
+    if (!ctx.idToken) {
+      throw new Error(
+        "[pxApi] Non-dev environment detected without an idToken. " +
+        "PX shell must inject idToken via ShellRuntimeContext before mounting the app."
+      );
+    }
+    if (ctx.appInstallationId === "synthetic-installation-context") {
+      throw new Error(
+        "[pxApi] Synthetic appInstallationId detected in non-dev context. " +
+        "dev-context.ts is for local preview only — use a real PlannerXchange installation."
+      );
+    }
+    return true;
+  }
+  return false;
 }
 
 /** Auth + installation headers required by all protected PX routes. */
@@ -94,7 +128,7 @@ export const MOCK_CLIENTS_SENSITIVE: PXClientSensitive[] = [
 
 // ── Client reads ──────────────────────────────────────────────────────────────
 
-/** GET /client-users (client.summary.read) — lists summary-safe client records */
+/** GET /client-users (client.summary.read) — lists summary-safe client records, no PII */
 export async function fetchClientSummaries(ctx: ShellRuntimeContext): Promise<PXClientSummary[]> {
   if (isLive(ctx)) {
     const res = await fetch(`${PX_BASE}/client-users`, { headers: pxHeaders(ctx) });
@@ -105,24 +139,6 @@ export async function fetchClientSummaries(ctx: ShellRuntimeContext): Promise<PX
   // Local dev fallback
   await delay(150);
   return MOCK_CLIENTS_SENSITIVE.map(({ firstName: _f, lastName: _l, emailPrimary: _e, dateOfBirth: _d, phonePrimary: _p, ...summary }) => summary);
-}
-
-/**
- * client.sensitive.read — routes are Reserved in the current PX release.
- * Returns undefined in a live context until PX publishes these routes.
- * Local dev returns full mock records (including emailPrimary).
- */
-export async function fetchClientSensitive(
-  ctx: ShellRuntimeContext,
-  clientId: string
-): Promise<PXClientSensitive | undefined> {
-  if (isLive(ctx)) {
-    console.warn(`[pxApi] client.sensitive.read routes are Reserved; cannot fetch PII for ${clientId} in live context.`);
-    return undefined;
-  }
-  // Local dev fallback
-  await delay(100);
-  return MOCK_CLIENTS_SENSITIVE.find((c) => c.id === clientId);
 }
 
 // ── Transactional email ───────────────────────────────────────────────────────

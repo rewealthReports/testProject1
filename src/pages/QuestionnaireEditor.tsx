@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getTemplate, saveTemplate } from "../lib/store";
 import type { RTQQuestion, RTQChoice, RTQTemplate } from "../types/rtq";
 import type { ShellRuntimeContext } from "../plannerxchange";
@@ -9,11 +9,23 @@ const MIN_CHOICES = 2;
 const MAX_CHOICES = 6;
 
 export function QuestionnaireEditor({ context }: { context: ShellRuntimeContext }) {
-  const [template, setTemplate] = useState<RTQTemplate>(() =>
-    getTemplate(context.firmId)
-  );
+  const [template, setTemplate] = useState<RTQTemplate>({ id: "", firmId: context.firmId, questions: [], updatedAt: "" });
+  const [templateLoaded, setTemplateLoaded] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getTemplate(context.firmId).then((t) => { setTemplate(t); setTemplateLoaded(true); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!templateLoaded) {
+    return (
+      <div className="p-6 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading…</p>
+      </div>
+    );
+  }
 
   function uid() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
@@ -106,8 +118,9 @@ export function QuestionnaireEditor({ context }: { context: ShellRuntimeContext 
     setTemplate((t) => ({ ...t, questions: next }));
   }
 
-  function handleSave() {
-    saveTemplate(template);
+  async function handleSave() {
+    const saved = await saveTemplate(template);
+    setTemplate(saved);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
     setEditingId(null);

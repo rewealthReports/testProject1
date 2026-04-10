@@ -8,6 +8,7 @@ import { QuestionnaireEditor } from "./pages/QuestionnaireEditor";
 import { RTQFlow } from "./pages/RTQFlow";
 import { RTQReport } from "./pages/RTQReport";
 import { fetchBranding, fetchLegal } from "./lib/pxApi";
+import { initStore } from "./lib/store";
 
 export function App({
   context,
@@ -15,6 +16,8 @@ export function App({
   context: ShellRuntimeContext;
   manifest: PlannerXchangeManifest;
 }) {
+  initStore(context);
+
   // branding.read — resolved via fetchBranding (GET /branding/current).
   // Shell injects an initial value; we refresh from the API when live so the
   // app always renders the most current firm branding.

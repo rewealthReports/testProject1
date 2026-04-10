@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../components/Modal";
 import type { RTQInvitation } from "../types/rtq";
-import type { PXClientSensitive } from "../types/rtq";
-import { fetchClientSummaries, fetchClientSensitive, sendTransactionalEmail } from "../lib/pxApi";
+import type { PXClientSummary } from "../types/rtq";
+import { fetchClientSummaries, sendTransactionalEmail } from "../lib/pxApi";
 import { createInvitation, getInvitations } from "../lib/store";
 import type { ShellRuntimeContext } from "../plannerxchange";
 
@@ -18,12 +18,11 @@ const STATUS_CONFIG: Record<
 
 export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) {
   const navigate = useNavigate();
-  const [invitations, setInvitations] = useState<RTQInvitation[]>(() =>
-    getInvitations(context.firmId)
-  );
-  const [clients, setClients] = useState<PXClientSensitive[]>([]);
+  const [invitations, setInvitations] = useState<RTQInvitation[]>([]);
+  const [clients, setClients] = useState<PXClientSummary[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [justSent, setJustSent] = useState(false);
@@ -31,56 +30,42 @@ export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) 
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetchClientSummaries(context).then((summaries) => {
-      // Fetch sensitive detail for each to get email address.
-      // We have canonical.client.sensitive.read declared in the manifest.
-      Promise.all(
-        summaries.map((s) => fetchClientSensitive(context, s.id))
-      ).then((results) => {
-        setClients(results.filter((c): c is PXClientSensitive => c !== undefined));
-      });
-    });
-  }, [context.firmId]);
+    getInvitations(context.firmId).then(setInvitations);
+    fetchClientSummaries(context).then(setClients);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  function reload() {
-    setInvitations(getInvitations(context.firmId));
+  async function reload() {
+    setInvitations(await getInvitations(context.firmId));
   }
 
   async function handleSendInvite() {
-    if (!selectedClientId) return;
+    if (!selectedClientId || !inviteEmail) return;
     const client = clients.find((c) => c.id === selectedClientId);
     if (!client) return;
-    if (!client.emailPrimary) {
-      setSendError("This client has no email address on file in PlannerXchange.");
-      return;
-    }
     setSending(true);
     setSendError(null);
     try {
-      const invitation = createInvitation(
+      const invitation = await createInvitation(
         context.firmId,
         client.id,
         client.displayName,
-        client.emailPrimary
+        inviteEmail
       );
-      reload();
+      await reload();
 
-      // In the real PX shell the app lives at /apps/<slug>/rtq/:token.
-      // In local dev (appBasename = "") use just /rtq/:token from the origin.
-      const basePath = context.appBasename
-        ? context.appBasename
-        : "";
+      const basePath = context.appBasename ? context.appBasename : "";
       const questionnaireUrl = `${window.location.origin}${basePath}/rtq/${invitation.token}`;
 
       await sendTransactionalEmail(context, {
-        to: client.emailPrimary,
+        to: inviteEmail,
         toName: client.displayName,
         subject: "Your Risk Tolerance Questionnaire is ready",
-        htmlBody: `<p>Hi ${client.firstName},</p>
+        htmlBody: `<p>Hi ${client.displayName},</p>
 <p>Your advisor has invited you to complete a short risk tolerance questionnaire.</p>
 <p><a href="${questionnaireUrl}">Start questionnaire →</a></p>
 <p>This takes approximately 5 minutes. Your answers will be used to understand your investment preferences.</p>`,
-        textBody: `Hi ${client.firstName},\n\nYour advisor has invited you to complete a short risk tolerance questionnaire.\n\nStart here: ${questionnaireUrl}\n\nThis takes approximately 5 minutes.`,
+        textBody: `Hi ${client.displayName},\n\nYour advisor has invited you to complete a short risk tolerance questionnaire.\n\nStart here: ${questionnaireUrl}\n\nThis takes approximately 5 minutes.`,
         clientUserId: client.id,
         appRecordId: invitation.id,
         fromLabel: "Risk Tolerance Questionnaire via PlannerXchange",
@@ -90,6 +75,7 @@ export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) 
       setJustSent(true);
       setInviteOpen(false);
       setSelectedClientId("");
+      setInviteEmail("");
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "Failed to send invitation.");
     } finally {
@@ -231,14 +217,14 @@ export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) 
       {/* Invite modal */}
       <Modal
         open={inviteOpen}
-        onClose={() => setInviteOpen(false)}
+        onClose={() => { setInviteOpen(false); setInviteEmail(""); setSelectedClientId(""); }}
         title="Invite Client to RTQ"
         primaryColor={context.branding.primaryColor}
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Select a client from your PlannerXchange client list. An email with a
-            questionnaire link will be sent via the PlannerXchange relay.
+            Select a client and enter their email address. An invitation link will
+            be sent via the PlannerXchange relay.
           </p>
 
           <div>
@@ -254,10 +240,22 @@ export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) 
                 .filter((c) => c.status === "active")
                 .map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.displayName} ({c.emailPrimary ?? "no email"})
+                    {c.displayName}
                   </option>
                 ))}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Client email</label>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="client@example.com"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              style={{ "--tw-ring-color": context.branding.primaryColor } as React.CSSProperties}
+            />
           </div>
 
           {sendError && (
@@ -273,7 +271,7 @@ export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) 
             </button>
             <button
               onClick={handleSendInvite}
-              disabled={!selectedClientId || sending}
+              disabled={!selectedClientId || !inviteEmail || sending}
               className="px-5 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-opacity hover:opacity-90"
               style={{ backgroundColor: context.branding.primaryColor }}
             >

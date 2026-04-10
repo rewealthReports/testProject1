@@ -1,15 +1,37 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getResponseById, getTemplate } from "../lib/store";
 import { RISK_BANDS } from "../lib/scoring";
 import type { ShellRuntimeContext } from "../plannerxchange";
-import type { RTQQuestion, RTQAnswer } from "../types/rtq";
+import type { RTQQuestion, RTQAnswer, RTQResponse, RTQTemplate } from "../types/rtq";
 
 export function RTQReport({ context }: { context: ShellRuntimeContext }) {
   const { responseId } = useParams<{ responseId: string }>();
   const navigate = useNavigate();
 
-  const response = responseId ? getResponseById(responseId) : undefined;
-  const template = getTemplate(context.firmId);
+  const [response, setResponse] = useState<RTQResponse | undefined>();
+  const [template, setTemplate] = useState<RTQTemplate | undefined>();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      responseId ? getResponseById(responseId) : Promise.resolve(undefined),
+      getTemplate(context.firmId),
+    ]).then(([resp, tpl]) => {
+      setResponse(resp);
+      setTemplate(tpl);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading…</p>
+      </div>
+    );
+  }
 
   if (!response) {
     return (
@@ -175,7 +197,7 @@ export function RTQReport({ context }: { context: ShellRuntimeContext }) {
               Question Responses
             </p>
             <div className="space-y-3">
-              {template.questions.map((q, idx) => (
+              {(template?.questions ?? []).map((q, idx) => (
                 <QuestionRow
                   key={q.id}
                   index={idx + 1}

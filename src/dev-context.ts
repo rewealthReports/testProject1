@@ -25,7 +25,6 @@ export const mockRuntimeContext: ShellRuntimeContext = {
     "tenant.read",
     "user.read",
     "client.summary.read",
-    "client.sensitive.read",
     "app_data.read",
     "app_data.write",
     "branding.read",
