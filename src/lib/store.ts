@@ -123,6 +123,23 @@ async function pxPatch<T>(recordId: string, payloadPatch: Partial<T>): Promise<v
 }
 
 // ── localStorage fallback (dev only) ─────────────────────────────────────────
+//
+// STORED PAYLOAD CLASSIFICATION — non-sensitive app work product only:
+//
+//   RTQTemplate   — questionnaire config (question text, scoring weights,
+//                   display order). No client PII at all.
+//
+//   RTQInvitation — firmId, opaque PX clientId (not a PII field), token,
+//                   clientDisplayName (name string from PX summary scope,
+//                   same data already in ShellRuntimeContext), status.
+//                   No address, DOB, SSN, or contact detail stored.
+//
+//   RTQResponse   — answers keyed by question ID, computed score, risk band.
+//                   No raw PII. clientDisplayName same as above.
+//
+// None of the three types include fields protected by restricted_pii or
+// client.sensitive.read — that scope is not requested by this app.
+// localStorage is therefore not used to persist sensitive client payloads.
 
 const LOCAL_KEYS = {
   template: "rtq:template",

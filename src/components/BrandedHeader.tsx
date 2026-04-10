@@ -25,6 +25,9 @@ export function BrandedHeader({ branding }: { branding: BrandingProfile }) {
             src={branding.logoUrl}
             alt="Firm logo"
             // Responsive sizing — different firms upload different proportions.
+            // referrerPolicy suppresses Referer header on logo asset requests,
+            // limiting IP/referrer leakage to the branding asset host.
+            referrerPolicy="no-referrer"
             className="h-8 max-w-[160px] object-contain"
           />
         ) : (

@@ -21,34 +21,14 @@ export interface SaveQuestionnaireInput {
   payload: QuestionnaireResponsePayload;
 }
 
-export interface CreateHouseholdInput {
-  name: string;
-  status?: string;
-}
-
-export interface CreateClientInput {
-  householdId: string;
-  displayName: string;
-  status?: string;
-}
-
 export interface RtqGateway {
   mode: "mock" | "plannerxchange";
-  supportsCanonicalWrites: boolean;
   listHouseholds: (signal?: AbortSignal) => Promise<CanonicalHousehold[]>;
   listClients: (householdId: string, signal?: AbortSignal) => Promise<CanonicalClientSummary[]>;
   listResponses: (
     householdId: string,
     signal?: AbortSignal
   ) => Promise<AppDataRecord<QuestionnaireResponsePayload>[]>;
-  createHousehold: (
-    input: CreateHouseholdInput,
-    signal?: AbortSignal
-  ) => Promise<CanonicalHousehold>;
-  createClient: (
-    input: CreateClientInput,
-    signal?: AbortSignal
-  ) => Promise<CanonicalClientSummary>;
   saveResponse: (
     input: SaveQuestionnaireInput,
     signal?: AbortSignal
@@ -85,7 +65,6 @@ export function createRtqGateway({
 function createMockGateway(context: ShellRuntimeContext): RtqGateway {
   return {
     mode: "mock",
-    supportsCanonicalWrites: true,
     async listHouseholds(signal) {
       await pause(180, signal);
       return [...mockHouseholds];
@@ -99,39 +78,6 @@ function createMockGateway(context: ShellRuntimeContext): RtqGateway {
       return mockRecords
         .filter((record) => record.householdId === householdId)
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
-    },
-    async createHousehold(input, signal) {
-      await pause(180, signal);
-      const household: CanonicalHousehold = {
-        id: buildId("hh", input.name),
-        firmId: context.firmId,
-        name: input.name.trim(),
-        status: input.status ?? "prospect",
-        assignedAdvisorUserIds: [context.userId]
-      };
-
-      mockHouseholds.unshift(household);
-      mockClientsByHousehold[household.id] = [];
-      return household;
-    },
-    async createClient(input, signal) {
-      await pause(180, signal);
-      const client: CanonicalClientSummary = {
-        id: buildId("cl", input.displayName),
-        firmId: context.firmId,
-        householdId: input.householdId,
-        displayName: input.displayName.trim(),
-        status: input.status ?? "prospect",
-        summaryFlags: {
-          hasRestrictedPii: true,
-          hasLinkedAccounts: false
-        }
-      };
-
-      const clientList = mockClientsByHousehold[input.householdId] ?? [];
-      clientList.unshift(client);
-      mockClientsByHousehold[input.householdId] = clientList;
-      return client;
     },
     async saveResponse(input, signal) {
       await pause(220, signal);
@@ -228,7 +174,6 @@ function createPlannerXchangeGateway({
 
   return {
     mode: "plannerxchange",
-    supportsCanonicalWrites: false,
     async listHouseholds(signal) {
       const response = await requestJson<ListResponse<CanonicalHousehold>>(
         "/canonical/households?limit=50",
@@ -257,16 +202,6 @@ function createPlannerXchangeGateway({
         signal
       );
       return response.items;
-    },
-    async createHousehold() {
-      throw new Error(
-        "PlannerXchange's current builder docs only expose canonical household reads. Household creation is documented as a shell-owned workflow, not a builder-app API."
-      );
-    },
-    async createClient() {
-      throw new Error(
-        "PlannerXchange's current builder docs only expose canonical client reads. Client creation is documented as a shell-owned workflow, not a builder-app API."
-      );
     },
     async saveResponse(input, signal) {
       return requestJson<AppDataRecord<QuestionnaireResponsePayload>>(

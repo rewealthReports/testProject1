@@ -23,10 +23,15 @@
  * for mock fallback code to silently run under a real firm context, and
  * impossible for synthetic fixtures to be presented as live PX runtime.
  *
+ * PRODUCTION BUILD EXCLUSION
+ * ────────────────────────────
  * src/dev-context.ts is loaded ONLY by src/main.tsx (local Vite preview).
  * src/plugin.tsx (the PX shell entry point) never imports dev-context.ts.
- * The two entry points are mutually exclusive; no synthetic fixture reaches
- * the PX shell at runtime.
+ * vite.config.ts declares "src/plugin.tsx" as the sole lib entry; Vite's
+ * tree-shaking therefore excludes src/main.tsx, src/dev-context.ts, and all
+ * transitive dev-only imports from the published plugin bundle.
+ * Verified: `dist/assets/plugin-*.js` contains no reference to synthetic-
+ * installation-context, MOCK_CLIENTS_SENSITIVE, or dev-context paths.
  */
 
 import type { PXClientSensitive, PXClientSummary } from "../types/rtq";

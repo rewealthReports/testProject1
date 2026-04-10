@@ -22,8 +22,6 @@ export const mockRuntimeContext: ShellRuntimeContext = {
   visibility: "private",
   dataPortabilityMode: "plannerxchange_portable",
   permissions: [
-    "tenant.read",
-    "user.read",
     "client.summary.read",
     "app_data.read",
     "app_data.write",
