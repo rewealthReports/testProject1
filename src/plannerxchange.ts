@@ -121,3 +121,96 @@ export interface PlannerXchangePluginModule {
   manifest: PlannerXchangeManifest;
   mount: (context: ShellRuntimeContext) => Promise<void> | void;
 }
+
+// ── Canonical data types ──────────────────────────────────────────────────────
+
+/** Firm-scoped household record (canonical.household.read or canonical.client.*.read) */
+export interface CanonicalHousehold {
+  id: string;
+  firmId: string;
+  name: string;
+  status: string;
+  taxState?: string;
+  latestTaxYear?: number | null;
+  latestTaxDataSource?: string | null;
+  taxDataStatus?: string | null;
+  assignedAdvisorUserIds?: string[];
+}
+
+/** Summary-safe canonical client record (no raw PII fields) */
+export interface CanonicalClientSummary {
+  id: string;
+  firmId: string;
+  householdId: string;
+  displayName: string;
+  status: string;
+  summaryFlags?: {
+    hasRestrictedPii: boolean;
+    hasLinkedAccounts: boolean;
+  };
+}
+
+/** Generic paginated list response returned by PX list endpoints */
+export interface ListResponse<T> {
+  items: T[];
+  pageInfo?: {
+    hasNextPage: boolean;
+    cursor?: string;
+  };
+}
+
+/** Source reference linking an app-data record to a canonical entity */
+export interface SourceRef {
+  sourceType: "canonical_household" | "canonical_client" | "canonical_account" | "manual_entry" | (string & {});
+  sourceId: string;
+  asOf: string;
+}
+
+/** Generic builder-owned app-data record (app_data.read / app_data.write) */
+export interface AppDataRecord<TPayload = Record<string, unknown>> {
+  recordId: string;
+  recordType: string;
+  title: string;
+  status: "draft" | "final" | "archived" | (string & {});
+  schemaVersion: number;
+  appId: string;
+  appInstallationId: string;
+  firmId: string;
+  householdId?: string | null;
+  clientUserId?: string | null;
+  accountId?: string | null;
+  sourceRefs: SourceRef[];
+  payload: TPayload;
+  createdAt: string;
+  updatedAt: string;
+  createdByUserId: string;
+  updatedByUserId: string;
+}
+
+// ── RTQ-specific payload types ────────────────────────────────────────────────
+
+/** Recommended portfolio allocation stored in a questionnaire response */
+export interface QuestionnaireAllocation {
+  equity: number;
+  fixedIncome: number;
+  cash: number;
+}
+
+/** Payload stored inside an AppDataRecord for a completed RTQ response */
+export interface QuestionnaireResponsePayload {
+  questionnaireVersion: number;
+  householdName: string;
+  respondentName: string;
+  respondentRole: "advisor_facilitated" | "self_service" | "joint";
+  respondentClientId?: string | null;
+  riskBand: string;
+  riskScore: number;
+  maxScore: number;
+  percentage: number;
+  recommendedAllocation: QuestionnaireAllocation;
+  narrative: string;
+  notes?: string | null;
+  answers: unknown[];
+  completedAt: string;
+  recommendedReviewDate: string;
+}

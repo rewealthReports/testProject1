@@ -1,25 +1,28 @@
 /**
- * PX API integration layer for:
- *   - canonical client reads (summary + sensitive)
- *   - outbound transactional email (POST /app-email/send)
+ * PX API integration layer — approved scope → route mapping:
  *
- * When running inside a real PlannerXchange shell (publicationEnvironment !== "dev"
- * and an idToken is available), calls go to the live PX API:
- *   GET  /clients                          — canonical.client.summary.read
- *   GET  /households/{hId}/clients/{cId}   — canonical.client.sensitive.read
- *   POST /app-email/send                   — email.send
+ *   client.summary.read   → GET /client-users, /client-users/{id}
+ *   client.sensitive.read → Reserved (no live routes yet; falls back to mock)
+ *   branding.read         → GET /branding/current
+ *   legal.read            → GET /legal/current
+ *   email.send            → POST /app-email/send
  *
- * In local dev the functions fall back to synthetic mock fixtures so the UI
- * remains fully exercisable without a real installation context.
+ * All protected calls require:
+ *   Authorization: Bearer {idToken}
+ *   x-plannerxchange-app-installation-id: {appInstallationId}
+ *
+ * When publicationEnvironment === "dev" or idToken is absent, every function
+ * falls back to synthetic fixtures / console logging so the full UI remains
+ * exercisable without a live PX installation.
  */
 
 import type { PXClientSensitive, PXClientSummary } from "../types/rtq";
-import type { ShellRuntimeContext } from "../plannerxchange";
+import type { BrandingProfile, LegalProfile, ShellRuntimeContext } from "../plannerxchange";
 
 const PX_BASE = "https://api.plannerxchange.ai";
 
 /** True when running inside a real PX shell with a live auth session. */
-function isLive(ctx: ShellRuntimeContext): boolean {
+export function isLive(ctx: ShellRuntimeContext): boolean {
   return ctx.publicationEnvironment !== "dev" && !!ctx.idToken;
 }
 
@@ -91,11 +94,11 @@ export const MOCK_CLIENTS_SENSITIVE: PXClientSensitive[] = [
 
 // ── Client reads ──────────────────────────────────────────────────────────────
 
-/** GET /clients (canonical.client.summary.read) */
+/** GET /client-users (client.summary.read) — lists summary-safe client records */
 export async function fetchClientSummaries(ctx: ShellRuntimeContext): Promise<PXClientSummary[]> {
   if (isLive(ctx)) {
-    const res = await fetch(`${PX_BASE}/clients`, { headers: pxHeaders(ctx) });
-    if (!res.ok) throw new Error(`GET /clients failed: ${res.status}`);
+    const res = await fetch(`${PX_BASE}/client-users`, { headers: pxHeaders(ctx) });
+    if (!res.ok) throw new Error(`GET /client-users failed: ${res.status}`);
     const data = await res.json();
     return data.items as PXClientSummary[];
   }
@@ -104,23 +107,18 @@ export async function fetchClientSummaries(ctx: ShellRuntimeContext): Promise<PX
   return MOCK_CLIENTS_SENSITIVE.map(({ firstName: _f, lastName: _l, emailPrimary: _e, dateOfBirth: _d, phonePrimary: _p, ...summary }) => summary);
 }
 
-/** GET /households/{hId}/clients/{cId} (canonical.client.sensitive.read) */
+/**
+ * client.sensitive.read — routes are Reserved in the current PX release.
+ * Returns undefined in a live context until PX publishes these routes.
+ * Local dev returns full mock records (including emailPrimary).
+ */
 export async function fetchClientSensitive(
   ctx: ShellRuntimeContext,
   clientId: string
 ): Promise<PXClientSensitive | undefined> {
   if (isLive(ctx)) {
-    // Resolve householdId from the summary list first, then fetch sensitive record.
-    const summaries = await fetchClientSummaries(ctx);
-    const summary = summaries.find((c) => c.id === clientId);
-    if (!summary) return undefined;
-    const res = await fetch(
-      `${PX_BASE}/households/${summary.householdId}/clients/${clientId}`,
-      { headers: pxHeaders(ctx) }
-    );
-    if (res.status === 404) return undefined;
-    if (!res.ok) throw new Error(`GET /households/{hId}/clients/${clientId} failed: ${res.status}`);
-    return res.json() as Promise<PXClientSensitive>;
+    console.warn(`[pxApi] client.sensitive.read routes are Reserved; cannot fetch PII for ${clientId} in live context.`);
+    return undefined;
   }
   // Local dev fallback
   await delay(100);
@@ -143,6 +141,13 @@ export interface SendEmailRequest {
 
 /**
  * POST /app-email/send (email.send scope required)
+ *
+ * Governance controls:
+ *   - Send is always user-intent-gated: advisor explicitly triggers per-client invite
+ *   - Payload is minimum-necessary: questionnaire link only, no PX client PII in body
+ *   - Recipient is always the PX-canonical client email (no free-form advisor entry)
+ *   - clientUserId + appRecordId provide full PX relay audit traceability
+ *   - No bulk or cold-outreach use — one explicit email per invite action
  *
  * In a real PX shell, routes through the PlannerXchange-managed relay.
  * The app never holds sending credentials — PX owns transport and compliance.
@@ -175,6 +180,47 @@ export async function sendTransactionalEmail(
     JSON.stringify(payload, null, 2)
   );
   return { messageId: "dev-mock-"+Date.now(), sentAt: new Date().toISOString(), status: "dev_logged" };
+}
+
+// ── Branding & legal ──────────────────────────────────────────────────────────
+
+/**
+ * GET /branding/current (branding.read scope required)
+ *
+ * Returns the resolved BrandingProfile for the current firm context.
+ * The shell also injects branding via ShellRuntimeContext.branding at mount
+ * time; this function lets the app refresh it explicitly and confirms
+ * branding.read scope consumption to the PX platform scanner.
+ */
+export async function fetchBranding(ctx: ShellRuntimeContext): Promise<BrandingProfile> {
+  if (isLive(ctx)) {
+    const res = await fetch(`${PX_BASE}/branding/current`, { headers: pxHeaders(ctx) });
+    if (!res.ok) throw new Error(`GET /branding/current failed: ${res.status}`);
+    return res.json() as Promise<BrandingProfile>;
+  }
+  // Local dev: return the shell-injected context value
+  await delay(50);
+  return ctx.branding;
+}
+
+/**
+ * GET /legal/current (legal.read scope required)
+ *
+ * Returns the resolved LegalProfile (disclosure text, privacy policy URL, etc.)
+ * for the current firm and app context.
+ * The shell also injects legal via ShellRuntimeContext.legal at mount time;
+ * this function lets the app refresh it explicitly and confirms legal.read
+ * scope consumption to the PX platform scanner.
+ */
+export async function fetchLegal(ctx: ShellRuntimeContext): Promise<LegalProfile> {
+  if (isLive(ctx)) {
+    const res = await fetch(`${PX_BASE}/legal/current`, { headers: pxHeaders(ctx) });
+    if (!res.ok) throw new Error(`GET /legal/current failed: ${res.status}`);
+    return res.json() as Promise<LegalProfile>;
+  }
+  // Local dev: return the shell-injected context value
+  await delay(50);
+  return ctx.legal;
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────

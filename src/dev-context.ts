@@ -24,8 +24,8 @@ export const mockRuntimeContext: ShellRuntimeContext = {
   permissions: [
     "tenant.read",
     "user.read",
-    "canonical.client.summary.read",
-    "canonical.client.sensitive.read",
+    "client.summary.read",
+    "client.sensitive.read",
     "app_data.read",
     "app_data.write",
     "branding.read",

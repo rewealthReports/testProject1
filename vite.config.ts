@@ -51,6 +51,9 @@ function plannerXchangePublishManifestPlugin(): Plugin {
 }
 
 export default defineConfig({
+  server: {
+    port: 5174
+  },
   plugins: [react(), tailwindcss(), plannerXchangePublishManifestPlugin()],
   build: {
     manifest: true,

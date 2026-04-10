@@ -2,13 +2,22 @@
  * Mock PX app-data store backed by localStorage.
  *
  * In a real PlannerXchange installation this module would call:
- *   GET  /app-data           — list records
- *   POST /app-data           — create record
- *   PATCH /app-data/{id}     — update record
+ *   GET  /app-data           — list records   (app_data.read)
+ *   POST /app-data           — create record  (app_data.write)
+ *   PATCH /app-data/{id}     — update record  (app_data.write)
  *
  * All requests require:
  *   Authorization: Bearer {idToken}
  *   x-plannerxchange-app-installation-id: {appInstallationId}
+ *
+ * Data portability governance (plannerxchange_portable):
+ *   - All records are keyed by firmId so data never crosses firm boundaries.
+ *   - Record schema is stable and versioned; no proprietary encoding is used.
+ *   - RTQTemplate, RTQInvitation, and RTQResponse are plain JSON — fully
+ *     exportable and importable without app-specific tooling.
+ *   - No decrypted PX client PII is stored here; only app-owned work product
+ *     (questionnaire configuration, invitation state, scored responses).
+ *   - Invitations reference clientId (opaque PX ID), not raw PII fields.
  *
  * TODO: replace localStorage calls with PX app-data API calls once a real
  *       installation context is available.
