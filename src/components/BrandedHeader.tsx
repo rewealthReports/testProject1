@@ -24,9 +24,12 @@ export function BrandedHeader({ branding }: { branding: BrandingProfile }) {
           <img
             src={branding.logoUrl}
             alt="Firm logo"
-            // Responsive sizing — different firms upload different proportions.
-            // referrerPolicy suppresses Referer header on logo asset requests,
-            // limiting IP/referrer leakage to the branding asset host.
+            // DECLARED EXTERNAL EGRESS: rendering logoUrl as an <img> src
+            // causes the browser to fetch from whatever host the branding
+            // asset lives on (typically PlannerXchange CDN or firm-uploaded
+            // storage). This is declared, intentional, and not a fetch() call
+            // originating from app code. referrerPolicy="no-referrer" suppresses
+            // Referer header on that request to limit referrer leakage.
             referrerPolicy="no-referrer"
             className="h-8 max-w-[160px] object-contain"
           />
