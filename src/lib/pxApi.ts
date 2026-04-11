@@ -8,10 +8,15 @@
  *
  * RUNTIME EGRESS POLICY
  * ─────────────────────
- * All runtime HTTP calls in this module target exclusively:
- *   https://api.plannerxchange.ai
+ * All live (non-dev) API calls are origin-validated. isLive() checks
+ * ctx.apiBaseUrl against APPROVED_PX_API_ORIGINS and throws if the origin
+ * does not match — enforcing egress policy in code, not comments only.
  *
- * No requests are made to any third-party host at runtime.
+ * In local dev (publicationEnvironment === "dev"), the base URL is read
+ * from VITE_PX_API_BASE (.env.local). dev-context.ts carries no hardcoded
+ * non-PX URL and is fully excluded from the production bundle.
+ *
+ * No requests are made to any third-party host at live runtime.
  * URLs appearing in package-lock.json (opencollective.com, tidelift.com,
  * registry.npmjs.org) are npm package funding metadata written by npm itself
  * — they are not code and are never executed as network calls.
@@ -38,11 +43,19 @@ import type { PXClientSensitive, PXClientSummary } from "../types/rtq";
 import type { BrandingProfile, LegalProfile, ShellRuntimeContext } from "../plannerxchange";
 
 /**
+ * Approved PlannerXchange API origins for live runtime calls.
+ * isLive() validates ctx.apiBaseUrl against this set — enforcing egress
+ * constraints in executable code rather than relying on comments alone.
+ */
+const APPROVED_PX_API_ORIGINS = new Set(["https://api.plannerxchange.ai"]);
+
+/**
  * Returns true when running in a live PX shell.
  *
- * FAIL-CLOSED: throws if publicationEnvironment !== "dev" and required auth
- * or installation fields are absent. Prevents mock/dev fallbacks from ever
- * running silently in a real firm context.
+ * FAIL-CLOSED: throws if publicationEnvironment !== "dev" and required auth,
+ * installation, or API origin fields are absent or invalid. Prevents mock/dev
+ * fallbacks from running silently under a real firm context, and prevents
+ * API calls from reaching non-PX origins.
  */
 export function isLive(ctx: ShellRuntimeContext): boolean {
   if (ctx.publicationEnvironment !== "dev") {
@@ -56,6 +69,14 @@ export function isLive(ctx: ShellRuntimeContext): boolean {
       throw new Error(
         "[pxApi] Synthetic appInstallationId detected in non-dev context. " +
         "dev-context.ts is for local preview only — use a real PlannerXchange installation."
+      );
+    }
+    // Origin allowlist — fail closed if apiBaseUrl is not an approved PX domain.
+    const origin = new URL(ctx.apiBaseUrl).origin;
+    if (!APPROVED_PX_API_ORIGINS.has(origin)) {
+      throw new Error(
+        `[pxApi] ctx.apiBaseUrl origin "${origin}" is not in the approved ` +
+        "PlannerXchange API origins list. Live egress to non-PX hosts is not permitted."
       );
     }
     return true;

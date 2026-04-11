@@ -139,6 +139,31 @@ async function pxPatch<T>(recordId: string, payloadPatch: Partial<T>): Promise<v
 // None of the three types include fields protected by restricted_pii or
 // client.sensitive.read — that scope is not requested by this app.
 // localStorage is therefore not used to persist sensitive client payloads.
+//
+// STORAGE PII GUARD
+// ──────────────────
+// assertNoPiiKeys() is called before every localStorage write. It detects
+// accidental schema drift — e.g. if a future refactor adds a canonical PII
+// field to RTQInvitation or RTQResponse — and throws at the write boundary
+// so the violation surfaces immediately rather than silently persisting.
+
+/** Field names that must never appear in a localStorage-bound payload. */
+const BLOCKED_STORAGE_KEYS = new Set([
+  "ssn", "taxId", "dateOfBirth", "dob", "bankAccount",
+  "routing", "socialSecurityNumber", "passportNumber", "ein",
+]);
+
+function assertNoPiiKeys(payload: unknown): void {
+  const json = JSON.stringify(payload);
+  for (const key of BLOCKED_STORAGE_KEYS) {
+    if (new RegExp(`"${key}"\\s*:`).test(json)) {
+      throw new Error(
+        `[store] Blocked write: serialized payload contains restricted field "${key}". ` +
+        "Persist sensitive data via the PX app-data API, not localStorage."
+      );
+    }
+  }
+}
 
 const LOCAL_KEYS = {
   template: "rtq:template",
@@ -154,6 +179,7 @@ function readJSON<T>(key: string, fallback: T): T {
 }
 
 function writeJSON<T>(key: string, value: T): void {
+  assertNoPiiKeys(value);
   localStorage.setItem(key, JSON.stringify(value));
 }
 
