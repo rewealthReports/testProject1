@@ -58,8 +58,10 @@ export default defineConfig({
   build: {
     manifest: true,
     rollupOptions: {
-      // Required by PlannerXchange shell: preserves named exports (e.g. mount)
-      // on the plugin entry chunk so shell dynamic-import can locate them.
+      // preserveEntrySignatures is required so Rollup keeps named exports (e.g.
+      // mount, unmount) on the plugin entry chunk for shell dynamic-import.
+      // This is a Rollup input-level option — must be at rollupOptions root,
+      // not inside output.
       preserveEntrySignatures: "exports-only",
       input: {
         preview: resolve(rootDir, "index.html"),

@@ -37,8 +37,6 @@
 import type { PXClientSensitive, PXClientSummary } from "../types/rtq";
 import type { BrandingProfile, LegalProfile, ShellRuntimeContext } from "../plannerxchange";
 
-const PX_BASE = "https://api.plannerxchange.ai";
-
 /**
  * Returns true when running in a live PX shell.
  *
@@ -68,7 +66,7 @@ export function isLive(ctx: ShellRuntimeContext): boolean {
 /** Auth + installation headers required by all protected PX routes. */
 function pxHeaders(ctx: ShellRuntimeContext): HeadersInit {
   return {
-    Authorization: `Bearer ${ctx.idToken ?? ""}`,
+    Authorization: `Bearer ${ctx.idToken}`,
     "x-plannerxchange-app-installation-id": ctx.appInstallationId,
     "Content-Type": "application/json",
   };
@@ -136,7 +134,7 @@ export const MOCK_CLIENTS_SENSITIVE: PXClientSensitive[] = [
 /** GET /client-users (client.summary.read) — lists summary-safe client records, no PII */
 export async function fetchClientSummaries(ctx: ShellRuntimeContext): Promise<PXClientSummary[]> {
   if (isLive(ctx)) {
-    const res = await fetch(`${PX_BASE}/client-users`, { headers: pxHeaders(ctx) });
+    const res = await fetch(`${ctx.apiBaseUrl}/client-users`, { headers: pxHeaders(ctx) });
     if (!res.ok) throw new Error(`GET /client-users failed: ${res.status}`);
     const data = await res.json();
     return data.items as PXClientSummary[];
@@ -183,7 +181,7 @@ export async function sendTransactionalEmail(
   payload: SendEmailRequest
 ): Promise<{ messageId: string; sentAt: string; status: string }> {
   if (isLive(ctx)) {
-    const res = await fetch(`${PX_BASE}/app-email/send`, {
+    const res = await fetch(`${ctx.apiBaseUrl}/app-email/send`, {
       method: "POST",
       headers: pxHeaders(ctx),
       body: JSON.stringify({ ...payload, templateSlug: null }),
@@ -215,7 +213,7 @@ export async function sendTransactionalEmail(
  */
 export async function fetchBranding(ctx: ShellRuntimeContext): Promise<BrandingProfile> {
   if (isLive(ctx)) {
-    const res = await fetch(`${PX_BASE}/branding/current`, { headers: pxHeaders(ctx) });
+    const res = await fetch(`${ctx.apiBaseUrl}/branding/current`, { headers: pxHeaders(ctx) });
     if (!res.ok) throw new Error(`GET /branding/current failed: ${res.status}`);
     return res.json() as Promise<BrandingProfile>;
   }
@@ -235,7 +233,7 @@ export async function fetchBranding(ctx: ShellRuntimeContext): Promise<BrandingP
  */
 export async function fetchLegal(ctx: ShellRuntimeContext): Promise<LegalProfile> {
   if (isLive(ctx)) {
-    const res = await fetch(`${PX_BASE}/legal/current`, { headers: pxHeaders(ctx) });
+    const res = await fetch(`${ctx.apiBaseUrl}/legal/current`, { headers: pxHeaders(ctx) });
     if (!res.ok) throw new Error(`GET /legal/current failed: ${res.status}`);
     return res.json() as Promise<LegalProfile>;
   }

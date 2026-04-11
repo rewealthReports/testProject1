@@ -110,11 +110,19 @@ export interface ShellRuntimeContext {
   initialPath: string;
   /**
    * Bearer token for the current PX auth session.
-   * Injected by the real PlannerXchange shell at runtime. Not present in local dev.
-   * Pass this as `Authorization: Bearer {idToken}` on all PX API calls.
-   * The app must never create a parallel auth system or store this token.
+   * Injected by the PlannerXchange shell at runtime; provided by dev-context.ts
+   * in local preview. Pass this as `Authorization: Bearer {idToken}` on all
+   * PX API calls. The app must never create a parallel auth system or store
+   * this token.
    */
-  idToken?: string;
+  idToken: string;
+  /**
+   * The base URL for PlannerXchange API calls.
+   * Apps should use this instead of hardcoding API URLs so they work correctly
+   * across dev, staging, and production environments. The shell injects the
+   * correct base URL for the current environment.
+   */
+  apiBaseUrl: string;
 }
 
 export interface PlannerXchangePluginModule {

@@ -34,7 +34,6 @@ import { DEFAULT_QUESTIONNAIRE } from "../data/defaultQuestionnaire";
 
 // ── Module init ───────────────────────────────────────────────────────────────
 
-const PX_BASE = "https://api.plannerxchange.ai";
 let _ctx: ShellRuntimeContext | null = null;
 
 /** Wire the store to the current PX runtime context before using any function. */
@@ -83,7 +82,7 @@ interface PXRecord<T> {
 function pxHeaders(): HeadersInit {
   const c = ctx();
   return {
-    Authorization: `Bearer ${c.idToken ?? ""}`,
+    Authorization: `Bearer ${c.idToken}`,
     "x-plannerxchange-app-installation-id": c.appInstallationId,
     "Content-Type": "application/json",
   };
@@ -92,14 +91,14 @@ function pxHeaders(): HeadersInit {
 async function pxList<T>(recordType: string): Promise<PXRecord<T>[]> {
   const c = ctx();
   const params = new URLSearchParams({ recordType, firmId: c.firmId, limit: "100" });
-  const res = await fetch(`${PX_BASE}/app-data?${params}`, { headers: pxHeaders() });
+  const res = await fetch(`${c.apiBaseUrl}/app-data?${params}`, { headers: pxHeaders() });
   if (!res.ok) throw new Error(`[store] GET /app-data?recordType=${recordType} failed: ${res.status}`);
   const data = (await res.json()) as { items: PXRecord<T>[] };
   return data.items;
 }
 
 async function pxGetById<T>(recordId: string): Promise<PXRecord<T> | undefined> {
-  const res = await fetch(`${PX_BASE}/app-data/${encodeURIComponent(recordId)}`, { headers: pxHeaders() });
+  const res = await fetch(`${ctx().apiBaseUrl}/app-data/${encodeURIComponent(recordId)}`, { headers: pxHeaders() });
   if (res.status === 404) return undefined;
   if (!res.ok) throw new Error(`[store] GET /app-data/${recordId} failed: ${res.status}`);
   return res.json() as Promise<PXRecord<T>>;
@@ -107,7 +106,7 @@ async function pxGetById<T>(recordId: string): Promise<PXRecord<T> | undefined> 
 
 async function pxCreate<T>(recordType: string, payload: T): Promise<PXRecord<T>> {
   const body = { recordType, schemaVersion: 1, firmId: ctx().firmId, payload };
-  const res = await fetch(`${PX_BASE}/app-data`, {
+  const res = await fetch(`${ctx().apiBaseUrl}/app-data`, {
     method: "POST", headers: pxHeaders(), body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`[store] POST /app-data (${recordType}) failed: ${res.status}`);
@@ -115,7 +114,7 @@ async function pxCreate<T>(recordType: string, payload: T): Promise<PXRecord<T>>
 }
 
 async function pxPatch<T>(recordId: string, payloadPatch: Partial<T>): Promise<void> {
-  const res = await fetch(`${PX_BASE}/app-data/${encodeURIComponent(recordId)}`, {
+  const res = await fetch(`${ctx().apiBaseUrl}/app-data/${encodeURIComponent(recordId)}`, {
     method: "PATCH", headers: pxHeaders(),
     body: JSON.stringify({ payload: payloadPatch }),
   });
