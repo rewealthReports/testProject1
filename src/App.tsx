@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import type { BrandingProfile, LegalProfile, PlannerXchangeManifest, ShellRuntimeContext } from "./plannerxchange";
+import { isShellHosted } from "./plannerxchange";
 import { MockBanner } from "./components/MockBanner";
 import { BrandedHeader } from "./components/BrandedHeader";
 import { AdvisorDashboard } from "./pages/AdvisorDashboard";
@@ -50,7 +51,7 @@ export function App({
   // history work correctly per the PlannerXchange builder checklist.
   return (
     <BrowserRouter basename={activeContext.appBasename}>
-      {activeContext.publicationEnvironment === "dev" && <MockBanner />}
+      {!isShellHosted(activeContext) && <MockBanner />}
 
       {/*
         RTQ flow and report can be accessed by clients directly via invitation
