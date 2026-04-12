@@ -9,14 +9,15 @@
  *     app_data.write → POST /app-data
  *     app_data.write → PATCH /app-data/{id}
  *
- * Dev runtime (publicationEnvironment === "dev"):
+ * Dev runtime (local preview, not shell-hosted per isShellHosted(ctx)):
  *   localStorage is used as a fast-feedback local fallback only.
  *   No PX client PII is stored in either path — only app-owned work product
  *   (questionnaire config, invitation state, scored responses).
  *
- * FAIL-CLOSED: isLive() throws in non-dev if idToken or appInstallationId are
- * absent or synthetic, preventing localStorage fallbacks from silently serving
- * data in a real firm context.
+ * FAIL-CLOSED: isLive() uses isShellHosted(ctx) for runtime-signal-based mode
+ * detection (not build-time environment tags). Throws if shell-hosted context
+ * lacks required auth or installation fields, preventing localStorage fallbacks
+ * from silently serving data in a real firm context.
  *
  * Data portability (plannerxchange_portable):
  *   - Live records are isolated per firmId via the PX app-data API firmId scope.
@@ -29,6 +30,7 @@
  */
 
 import type { RTQInvitation, RTQResponse, RTQTemplate } from "../types/rtq";
+import { isShellHosted } from "../plannerxchange";
 import type { ShellRuntimeContext } from "../plannerxchange";
 import { DEFAULT_QUESTIONNAIRE } from "../data/defaultQuestionnaire";
 
@@ -48,28 +50,34 @@ function ctx(): ShellRuntimeContext {
 
 /**
  * Returns true when we are in a live PX shell.
- * FAIL-CLOSED: throws in non-dev if required auth/installation fields are
- * absent or synthetic — prevents localStorage fallback from silently running
+ *
+ * Uses isShellHosted(ctx) for mode detection — runtime-injected context signals
+ * (idToken, appInstallationId), not build-time environment tags. Ensures the
+ * published artifact always detects the correct mode when loaded by the shell.
+ *
+ * FAIL-CLOSED: throws if shell-hosted signals are present but required fields
+ * are absent or synthetic — prevents localStorage fallback from silently running
  * under a real firm context.
  */
 function isLive(): boolean {
   const c = ctx();
-  if (c.publicationEnvironment !== "dev") {
-    if (!c.idToken) {
-      throw new Error(
-        "[store] Non-dev environment without idToken. " +
-        "PX shell must inject idToken before mounting the app."
-      );
-    }
-    if (c.appInstallationId === "synthetic-installation-context") {
-      throw new Error(
-        "[store] Synthetic appInstallationId in non-dev context. " +
-        "Use a real PlannerXchange installation."
-      );
-    }
-    return true;
+  if (!isShellHosted(c)) {
+    return false; // Local dev — use localStorage fallback.
   }
-  return false;
+  // Shell-hosted: enforce all required runtime signals.
+  if (!c.idToken) {
+    throw new Error(
+      "[store] Shell-hosted context without idToken. " +
+      "PX shell must inject idToken before mounting the app."
+    );
+  }
+  if (c.appInstallationId === "synthetic-installation-context") {
+    throw new Error(
+      "[store] Synthetic appInstallationId in a shell-hosted context. " +
+      "Use a real PlannerXchange installation."
+    );
+  }
+  return true;
 }
 
 // ── PX App Data API helpers ───────────────────────────────────────────────────

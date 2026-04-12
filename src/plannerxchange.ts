@@ -125,6 +125,32 @@ export interface ShellRuntimeContext {
   apiBaseUrl: string;
 }
 
+/**
+ * Returns true when the app is running inside a real PlannerXchange shell.
+ *
+ * Detection is based on runtime-injected context signals — not build-time
+ * environment tags — so mode detection is correct when the shell loads a
+ * published artifact into any environment:
+ *
+ *   - idToken: a real shell always injects a live Cognito-issued token;
+ *              the dev placeholder "synthetic-dev-token" is never injected
+ *              by a real shell.
+ *   - appInstallationId: a real shell always injects a non-synthetic ID;
+ *                        "synthetic-installation-context" is only produced
+ *                        by src/dev-context.ts.
+ *
+ * Use this in place of checking `publicationEnvironment` for mock/live
+ * branching so that the published plugin bundle is never gated on a
+ * build-time-baked value.
+ */
+export function isShellHosted(ctx: ShellRuntimeContext): boolean {
+  return (
+    Boolean(ctx.idToken) &&
+    ctx.idToken !== "synthetic-dev-token" &&
+    ctx.appInstallationId !== "synthetic-installation-context"
+  );
+}
+
 export interface PlannerXchangePluginModule {
   manifest: PlannerXchangeManifest;
   mount: (context: ShellRuntimeContext) => Promise<void> | void;

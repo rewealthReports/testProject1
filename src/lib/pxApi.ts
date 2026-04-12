@@ -23,10 +23,13 @@
  *
  * MOCK / LIVE ISOLATION
  * ─────────────────────
- * isLive() is FAIL-CLOSED: it throws hard errors in any non-dev context where
- * required auth or installation fields are absent. This makes it impossible
- * for mock fallback code to silently run under a real firm context, and
- * impossible for synthetic fixtures to be presented as live PX runtime.
+ * isLive() is FAIL-CLOSED and uses isShellHosted(ctx) from plannerxchange.ts
+ * for mode detection. isShellHosted() tests runtime-injected context signals
+ * (idToken presence/value, appInstallationId value) rather than build-time
+ * environment tags — ensuring the published artifact detects the correct mode
+ * regardless of which environment the shell loads it in. Hard errors are thrown
+ * if shell-hosted signals are present but required fields are incomplete or if
+ * the API origin is not in the approved allowlist.
  *
  * PRODUCTION BUILD EXCLUSION
  * ────────────────────────────
@@ -40,6 +43,7 @@
  */
 
 import type { PXClientSensitive, PXClientSummary } from "../types/rtq";
+import { isShellHosted } from "../plannerxchange";
 import type { BrandingProfile, LegalProfile, ShellRuntimeContext } from "../plannerxchange";
 
 /**
@@ -52,36 +56,41 @@ const APPROVED_PX_API_ORIGINS = new Set(["https://api.plannerxchange.ai"]);
 /**
  * Returns true when running in a live PX shell.
  *
- * FAIL-CLOSED: throws if publicationEnvironment !== "dev" and required auth,
- * installation, or API origin fields are absent or invalid. Prevents mock/dev
- * fallbacks from running silently under a real firm context, and prevents
- * API calls from reaching non-PX origins.
+ * Mode detection uses isShellHosted(ctx) which tests runtime-injected context
+ * signals rather than build-time environment tags. This ensures the published
+ * artifact does not misdetect mode when loaded by the shell.
+ *
+ * FAIL-CLOSED: if isShellHosted() returns true, all required runtime fields
+ * are re-validated and the API origin is checked against APPROVED_PX_API_ORIGINS.
+ * Throws on any violation — prevents mock/localStorage fallbacks from silently
+ * running under a real firm context, and blocks egress to non-PX origins.
  */
 export function isLive(ctx: ShellRuntimeContext): boolean {
-  if (ctx.publicationEnvironment !== "dev") {
-    if (!ctx.idToken) {
-      throw new Error(
-        "[pxApi] Non-dev environment detected without an idToken. " +
-        "PX shell must inject idToken via ShellRuntimeContext before mounting the app."
-      );
-    }
-    if (ctx.appInstallationId === "synthetic-installation-context") {
-      throw new Error(
-        "[pxApi] Synthetic appInstallationId detected in non-dev context. " +
-        "dev-context.ts is for local preview only — use a real PlannerXchange installation."
-      );
-    }
-    // Origin allowlist — fail closed if apiBaseUrl is not an approved PX domain.
-    const origin = new URL(ctx.apiBaseUrl).origin;
-    if (!APPROVED_PX_API_ORIGINS.has(origin)) {
-      throw new Error(
-        `[pxApi] ctx.apiBaseUrl origin "${origin}" is not in the approved ` +
-        "PlannerXchange API origins list. Live egress to non-PX hosts is not permitted."
-      );
-    }
-    return true;
+  if (!isShellHosted(ctx)) {
+    return false; // Local dev — use localStorage / mock fallback paths.
   }
-  return false;
+  // Shell-hosted: enforce all required runtime signals before allowing live calls.
+  if (!ctx.idToken) {
+    throw new Error(
+      "[pxApi] Shell-hosted context detected without an idToken. " +
+      "PX shell must inject idToken via ShellRuntimeContext before mounting the app."
+    );
+  }
+  if (ctx.appInstallationId === "synthetic-installation-context") {
+    throw new Error(
+      "[pxApi] Synthetic appInstallationId detected in a shell-hosted context. " +
+      "dev-context.ts is for local preview only — use a real PlannerXchange installation."
+    );
+  }
+  // Origin allowlist — fail closed if apiBaseUrl is not an approved PX domain.
+  const origin = new URL(ctx.apiBaseUrl).origin;
+  if (!APPROVED_PX_API_ORIGINS.has(origin)) {
+    throw new Error(
+      `[pxApi] ctx.apiBaseUrl origin "${origin}" is not in the approved ` +
+      "PlannerXchange API origins list. Live egress to non-PX hosts is not permitted."
+    );
+  }
+  return true;
 }
 
 /** Auth + installation headers required by all protected PX routes. */
