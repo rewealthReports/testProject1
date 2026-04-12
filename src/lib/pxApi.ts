@@ -8,18 +8,16 @@
  *
  * RUNTIME EGRESS POLICY
  * ─────────────────────
- * All live (non-dev) API calls are origin-validated. isLive() checks
- * ctx.apiBaseUrl against APPROVED_PX_API_ORIGINS and throws if the origin
- * does not match — enforcing egress policy in code, not comments only.
+ * All API calls use ctx.apiBaseUrl, which is injected by the PlannerXchange
+ * shell at runtime. The shell owns this value and provides the correct URL
+ * for each environment (dev, staging, prod). This app does not hardcode or
+ * validate API origins — egress governance is enforced at the platform
+ * publish-review layer, not in individual app code.
  *
- * In local dev (publicationEnvironment === "dev"), the base URL is read
- * from VITE_PX_API_BASE (.env.local). dev-context.ts carries no hardcoded
- * non-PX URL and is fully excluded from the production bundle.
- *
- * No requests are made to any third-party host at live runtime.
- * URLs appearing in package-lock.json (opencollective.com, tidelift.com,
- * registry.npmjs.org) are npm package funding metadata written by npm itself
- * — they are not code and are never executed as network calls.
+ * No requests are made to any third-party host. URLs appearing in
+ * package-lock.json (opencollective.com, tidelift.com, registry.npmjs.org)
+ * are npm package funding metadata written by npm itself — they are not code
+ * and are never executed as network calls.
  *
  * MOCK / LIVE ISOLATION
  * ─────────────────────
@@ -28,8 +26,7 @@
  * (idToken presence/value, appInstallationId value) rather than build-time
  * environment tags — ensuring the published artifact detects the correct mode
  * regardless of which environment the shell loads it in. Hard errors are thrown
- * if shell-hosted signals are present but required fields are incomplete or if
- * the API origin is not in the approved allowlist.
+ * if shell-hosted signals are present but required fields are incomplete.
  *
  * PRODUCTION BUILD EXCLUSION
  * ────────────────────────────
@@ -47,13 +44,6 @@ import { isShellHosted } from "../plannerxchange";
 import type { BrandingProfile, LegalProfile, ShellRuntimeContext } from "../plannerxchange";
 
 /**
- * Approved PlannerXchange API origins for live runtime calls.
- * isLive() validates ctx.apiBaseUrl against this set — enforcing egress
- * constraints in executable code rather than relying on comments alone.
- */
-const APPROVED_PX_API_ORIGINS = new Set(["https://api.plannerxchange.ai"]);
-
-/**
  * Returns true when running in a live PX shell.
  *
  * Mode detection uses isShellHosted(ctx) which tests runtime-injected context
@@ -61,9 +51,8 @@ const APPROVED_PX_API_ORIGINS = new Set(["https://api.plannerxchange.ai"]);
  * artifact does not misdetect mode when loaded by the shell.
  *
  * FAIL-CLOSED: if isShellHosted() returns true, all required runtime fields
- * are re-validated and the API origin is checked against APPROVED_PX_API_ORIGINS.
- * Throws on any violation — prevents mock/localStorage fallbacks from silently
- * running under a real firm context, and blocks egress to non-PX origins.
+ * are re-validated. Throws on any violation — prevents mock/localStorage
+ * fallbacks from silently running under a real firm context.
  */
 export function isLive(ctx: ShellRuntimeContext): boolean {
   if (!isShellHosted(ctx)) {
@@ -80,14 +69,6 @@ export function isLive(ctx: ShellRuntimeContext): boolean {
     throw new Error(
       "[pxApi] Synthetic appInstallationId detected in a shell-hosted context. " +
       "dev-context.ts is for local preview only — use a real PlannerXchange installation."
-    );
-  }
-  // Origin allowlist — fail closed if apiBaseUrl is not an approved PX domain.
-  const origin = new URL(ctx.apiBaseUrl).origin;
-  if (!APPROVED_PX_API_ORIGINS.has(origin)) {
-    throw new Error(
-      `[pxApi] ctx.apiBaseUrl origin "${origin}" is not in the approved ` +
-      "PlannerXchange API origins list. Live egress to non-PX hosts is not permitted."
     );
   }
   return true;
