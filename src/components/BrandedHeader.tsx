@@ -1,6 +1,20 @@
 import type { BrandingProfile } from "../plannerxchange";
 import { Link, useLocation } from "react-router-dom";
 
+/**
+ * Returns true only for https: URLs. Rejects javascript:, data:, and any
+ * other scheme that could trigger unexpected or unsafe browser behavior.
+ * branding.logoUrl is platform-provided, but we validate before render as
+ * a defence-in-depth check against misconfigured or unexpected values.
+ */
+function isSafeLogoUrl(url: string): boolean {
+  try {
+    return new URL(url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 interface NavLink {
   to: string;
   label: string;
@@ -20,7 +34,7 @@ export function BrandedHeader({ branding }: { branding: BrandingProfile }) {
       style={{ backgroundColor: branding.primaryColor, color: branding.fontColor ?? "#ffffff" }}
     >
       <div className="flex items-center gap-3">
-        {branding.logoUrl ? (
+        {branding.logoUrl && isSafeLogoUrl(branding.logoUrl) ? (
           <img
             src={branding.logoUrl}
             alt="Firm logo"

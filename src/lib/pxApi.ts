@@ -35,11 +35,11 @@
  * vite.config.ts declares "src/plugin.tsx" as the sole lib entry; Vite's
  * tree-shaking therefore excludes src/main.tsx, src/dev-context.ts, and all
  * transitive dev-only imports from the published plugin bundle.
- * Verified: `dist/assets/plugin-*.js` contains no reference to synthetic-
- * installation-context, MOCK_CLIENTS_SENSITIVE, or dev-context paths.
+ * Run `npm run check:bundle` after each build to assert programmatically
+ * that no dev-only fixture strings appear in the emitted plugin artifact.
  */
 
-import type { PXClientSensitive, PXClientSummary } from "../types/rtq";
+import type { PXClientSummary } from "../types/rtq";
 import { isShellHosted } from "../plannerxchange";
 import type { BrandingProfile, LegalProfile, ShellRuntimeContext } from "../plannerxchange";
 
@@ -74,73 +74,7 @@ export function isLive(ctx: ShellRuntimeContext): boolean {
   return true;
 }
 
-/** Auth + installation headers required by all protected PX routes. */
-function pxHeaders(ctx: ShellRuntimeContext): HeadersInit {
-  return {
-    Authorization: `Bearer ${ctx.idToken}`,
-    "x-plannerxchange-app-installation-id": ctx.appInstallationId,
-    "Content-Type": "application/json",
-  };
-}
-
-// ── Synthetic client fixtures (obviously fake) ────────────────────────────────
-
-export const MOCK_CLIENTS_SENSITIVE: PXClientSensitive[] = [
-  {
-    id: "cl_synthetic_001",
-    firmId: "synthetic-demo-firm",
-    householdId: "hh_synthetic_001",
-    displayName: "Alex Testington",
-    status: "active",
-    firstName: "Alex",
-    lastName: "Testington",
-    emailPrimary: "alex.testington@example.test",
-  },
-  {
-    id: "cl_synthetic_002",
-    firmId: "synthetic-demo-firm",
-    householdId: "hh_synthetic_002",
-    displayName: "Brooke Demosample",
-    status: "active",
-    firstName: "Brooke",
-    lastName: "Demosample",
-    emailPrimary: "brooke.demosample@example.test",
-  },
-  {
-    id: "cl_synthetic_003",
-    firmId: "synthetic-demo-firm",
-    householdId: "hh_synthetic_003",
-    displayName: "Chris Placeholder",
-    status: "active",
-    firstName: "Chris",
-    lastName: "Placeholder",
-    emailPrimary: "chris.placeholder@example.test",
-  },
-  {
-    id: "cl_synthetic_004",
-    firmId: "synthetic-demo-firm",
-    householdId: "hh_synthetic_004",
-    displayName: "Dana Fakename",
-    status: "active",
-    firstName: "Dana",
-    lastName: "Fakename",
-    emailPrimary: "dana.fakename@example.test",
-  },
-  {
-    // Test client — real email for local dev flow testing only.
-    // Remove or replace before publishing.
-    id: "cl_test_dillon",
-    firmId: "synthetic-demo-firm",
-    householdId: "hh_test_dillon",
-    displayName: "Dillon Kenniston (Test)",
-    status: "active",
-    firstName: "Dillon",
-    lastName: "Kenniston",
-    emailPrimary: "dillon.kenniston@gmail.com",
-  },
-];
-
-// ── Client reads ──────────────────────────────────────────────────────────────
+// ── Client reads ──────────────────────────────────────────────────────────────────────────────
 
 /** GET /client-users (client.summary.read) — lists summary-safe client records, no PII */
 export async function fetchClientSummaries(ctx: ShellRuntimeContext): Promise<PXClientSummary[]> {
@@ -150,9 +84,18 @@ export async function fetchClientSummaries(ctx: ShellRuntimeContext): Promise<PX
     const data = await res.json();
     return data.items as PXClientSummary[];
   }
-  // Local dev fallback
+  // Local dev fallback — no mock client fixtures in this module.
+  // Add clients via the PX dev shell or populate dev-context branding
+  // manually; mock client data must not live in plugin-bundle-reachable code.
   await delay(150);
-  return MOCK_CLIENTS_SENSITIVE.map(({ firstName: _f, lastName: _l, emailPrimary: _e, dateOfBirth: _d, phonePrimary: _p, ...summary }) => summary);
+  return [];
+}
+function pxHeaders(ctx: ShellRuntimeContext): HeadersInit {
+  return {
+    Authorization: `Bearer ${ctx.idToken}`,
+    "x-plannerxchange-app-installation-id": ctx.appInstallationId,
+    "Content-Type": "application/json",
+  };
 }
 
 // ── Transactional email ───────────────────────────────────────────────────────
