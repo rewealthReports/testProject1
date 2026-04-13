@@ -169,7 +169,9 @@ export async function fetchBranding(ctx: ShellRuntimeContext): Promise<BrandingP
   if (isLive(ctx)) {
     const res = await fetch(`${ctx.apiBaseUrl}/branding/current`, { headers: pxHeaders(ctx) });
     if (!res.ok) throw new Error(`GET /branding/current failed: ${res.status}`);
-    return res.json() as Promise<BrandingProfile>;
+    // /branding/current returns { branding: BrandingProfile, fallbacksApplied: string[] }
+    const { branding } = await res.json() as { branding: BrandingProfile };
+    return branding;
   }
   // Local dev: return the shell-injected context value
   await delay(50);
@@ -189,7 +191,9 @@ export async function fetchLegal(ctx: ShellRuntimeContext): Promise<LegalProfile
   if (isLive(ctx)) {
     const res = await fetch(`${ctx.apiBaseUrl}/legal/current`, { headers: pxHeaders(ctx) });
     if (!res.ok) throw new Error(`GET /legal/current failed: ${res.status}`);
-    return res.json() as Promise<LegalProfile>;
+    // /legal/current returns { legal: LegalProfile, fallbacksApplied: string[] }
+    const { legal } = await res.json() as { legal: LegalProfile };
+    return legal;
   }
   // Local dev: return the shell-injected context value
   await delay(50);

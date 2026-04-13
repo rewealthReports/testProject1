@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
+    "postbuild": "node scripts/check-bundle.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:bundle": "node scripts/check-bundle.mjs"
   },

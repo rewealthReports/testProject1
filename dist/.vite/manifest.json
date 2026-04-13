@@ -1,6 +1,6 @@
 {
   "index.html": {
-    "file": "assets/preview-CM6EBlEN.js",
+    "file": "assets/preview-g0G8mtpd.js",
     "name": "preview",
     "src": "index.html",
     "isEntry": true,
@@ -9,7 +9,7 @@
     ]
   },
   "src/plugin.tsx": {
-    "file": "assets/plugin-BrMlfykx.js",
+    "file": "assets/plugin-C69XSAUm.js",
     "name": "plugin",
     "src": "src/plugin.tsx",
     "isEntry": true,
