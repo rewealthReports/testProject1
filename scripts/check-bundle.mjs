@@ -89,7 +89,7 @@ for (const field of [
   "sourceInputDigest",
   "aggregateArtifactDigest",
   "buildCommand",
-  "lockfileDigests",
+  "dependencyLockfileDigests",
 ]) {
   if (!provenance[field]) {
     fail(`build provenance is missing ${field}.`);
