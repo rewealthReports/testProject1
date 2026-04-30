@@ -4,13 +4,11 @@
  * Hosted runtime:
  *   Persistence uses the PlannerXchange App Data API through
  *   ShellRuntimeContext.authenticatedFetch. The shell owns authentication and
- *   governance headers; this module never reads tokens or builds auth
- *   headers.
+ *   governance headers; this module never reads tokens or builds auth headers.
  *
  * Local preview runtime:
- *   localStorage is a dev-only fallback. It is disabled whenever shell-hosted
- *   runtime signals are present, and email addresses are redacted before local
- *   persistence.
+ *   Data is held in memory only, and only on localhost while Vite is running
+ *   in developer mode. Unexpected non-shell runtimes fail closed.
  */
 
 import type { RTQInvitation, RTQResponse, RTQTemplate } from "../types/rtq";
@@ -19,6 +17,16 @@ import { hasShellRuntimeSignals, isShellHosted } from "../plannerxchange";
 import type { ShellRuntimeContext } from "../plannerxchange";
 
 let _ctx: ShellRuntimeContext | null = null;
+
+const memoryStore: {
+  template: RTQTemplate | null;
+  invitations: RTQInvitation[];
+  responses: RTQResponse[];
+} = {
+  template: null,
+  invitations: [],
+  responses: [],
+};
 
 export function initStore(ctx: ShellRuntimeContext): void {
   _ctx = ctx;
@@ -29,9 +37,22 @@ function ctx(): ShellRuntimeContext {
   return _ctx;
 }
 
+function isExplicitLocalPreview(): boolean {
+  if (!import.meta.env.DEV) return false;
+  if (typeof window === "undefined") return false;
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
+function ensureLocalPreview(): void {
+  if (!isExplicitLocalPreview()) {
+    throw new Error("[store] PlannerXchange shell context is required outside explicit localhost dev preview.");
+  }
+}
+
 function isLive(): boolean {
   const c = ctx();
   if (!hasShellRuntimeSignals(c)) {
+    ensureLocalPreview();
     return false;
   }
   if (!isShellHosted(c)) {
@@ -104,63 +125,6 @@ async function pxPatch<T>(recordId: string, payloadPatch: Partial<T>): Promise<v
   if (!res.ok) throw new Error(`[store] PATCH /app-data/${recordId} failed: ${res.status}`);
 }
 
-const LOCAL_KEYS = {
-  template: "rtq:template",
-  invitations: "rtq:invitations",
-  responses: "rtq:responses",
-} as const;
-
-const BLOCKED_STORAGE_KEYS = new Set([
-  "ssn",
-  "taxId",
-  "dateOfBirth",
-  "dob",
-  "bankAccount",
-  "routing",
-  "socialSecurityNumber",
-  "passportNumber",
-  "ein",
-]);
-
-const EMAIL_VALUE_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
-const LOCAL_REDACTED_EMAIL = "[local-preview-email-redacted]";
-
-function assertLocalStorageAllowed(): void {
-  if (hasShellRuntimeSignals(ctx())) {
-    throw new Error("[store] Refusing browser storage because shell-hosted runtime signals are present.");
-  }
-}
-
-function assertNoSensitiveStoragePayload(payload: unknown): void {
-  const json = JSON.stringify(payload);
-  for (const key of BLOCKED_STORAGE_KEYS) {
-    if (new RegExp(`"${key}"\\s*:`).test(json)) {
-      throw new Error(
-        `[store] Blocked localStorage write: serialized payload contains restricted field "${key}".`
-      );
-    }
-  }
-  if (EMAIL_VALUE_PATTERN.test(json)) {
-    throw new Error("[store] Blocked localStorage write: serialized payload contains an email address.");
-  }
-}
-
-function readJSON<T>(key: string, fallback: T): T {
-  assertLocalStorageAllowed();
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJSON<T>(key: string, value: T): void {
-  assertLocalStorageAllowed();
-  assertNoSensitiveStoragePayload(value);
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
 function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -173,16 +137,14 @@ export async function getTemplate(firmId: string): Promise<RTQTemplate> {
     return { id: "", firmId, questions: DEFAULT_QUESTIONNAIRE.questions, updatedAt: new Date().toISOString() };
   }
 
-  const stored = readJSON<RTQTemplate | null>(LOCAL_KEYS.template, null);
-  if (stored && stored.firmId === firmId) return stored;
-  const fresh: RTQTemplate = {
+  if (memoryStore.template && memoryStore.template.firmId === firmId) return memoryStore.template;
+  memoryStore.template = {
     id: "tpl-default",
     firmId,
     questions: DEFAULT_QUESTIONNAIRE.questions,
     updatedAt: new Date().toISOString(),
   };
-  writeJSON(LOCAL_KEYS.template, fresh);
-  return fresh;
+  return memoryStore.template;
 }
 
 export async function saveTemplate(template: RTQTemplate): Promise<RTQTemplate> {
@@ -196,7 +158,7 @@ export async function saveTemplate(template: RTQTemplate): Promise<RTQTemplate> 
     return { ...record.payload, id: record.recordId };
   }
 
-  writeJSON(LOCAL_KEYS.template, updated);
+  memoryStore.template = updated;
   return updated;
 }
 
@@ -208,7 +170,7 @@ export async function getInvitations(firmId: string): Promise<RTQInvitation[]> {
       .map((r) => ({ ...r.payload, id: r.recordId }));
   }
 
-  return readJSON<RTQInvitation[]>(LOCAL_KEYS.invitations, []).filter((i) => i.firmId === firmId);
+  return memoryStore.invitations.filter((i) => i.firmId === firmId);
 }
 
 export async function createInvitation(
@@ -233,9 +195,7 @@ export async function createInvitation(
     return { ...record.payload, id: record.recordId };
   }
 
-  const all = readJSON<RTQInvitation[]>(LOCAL_KEYS.invitations, []);
-  const localStoredInvitation = { ...invitation, clientEmail: LOCAL_REDACTED_EMAIL };
-  writeJSON(LOCAL_KEYS.invitations, [...all, localStoredInvitation]);
+  memoryStore.invitations = [...memoryStore.invitations, invitation];
   return invitation;
 }
 
@@ -246,7 +206,7 @@ export async function getInvitationByToken(token: string): Promise<RTQInvitation
     return match ? { ...match.payload, id: match.recordId } : undefined;
   }
 
-  return readJSON<RTQInvitation[]>(LOCAL_KEYS.invitations, []).find((i) => i.token === token);
+  return memoryStore.invitations.find((i) => i.token === token);
 }
 
 export async function markInvitationCompleted(invitationId: string, responseId: string): Promise<void> {
@@ -259,14 +219,10 @@ export async function markInvitationCompleted(invitationId: string, responseId: 
     return;
   }
 
-  const all = readJSON<RTQInvitation[]>(LOCAL_KEYS.invitations, []);
-  writeJSON(
-    LOCAL_KEYS.invitations,
-    all.map((inv) =>
-      inv.id === invitationId
-        ? { ...inv, status: "completed" as const, completedAt: new Date().toISOString(), responseId }
-        : inv
-    )
+  memoryStore.invitations = memoryStore.invitations.map((inv) =>
+    inv.id === invitationId
+      ? { ...inv, status: "completed" as const, completedAt: new Date().toISOString(), responseId }
+      : inv
   );
 }
 
@@ -278,7 +234,7 @@ export async function getResponses(firmId: string): Promise<RTQResponse[]> {
       .map((r) => ({ ...r.payload, id: r.recordId }));
   }
 
-  return readJSON<RTQResponse[]>(LOCAL_KEYS.responses, []).filter((r) => r.firmId === firmId);
+  return memoryStore.responses.filter((r) => r.firmId === firmId);
 }
 
 export async function getResponseById(id: string): Promise<RTQResponse | undefined> {
@@ -287,7 +243,7 @@ export async function getResponseById(id: string): Promise<RTQResponse | undefin
     return record ? { ...record.payload, id: record.recordId } : undefined;
   }
 
-  return readJSON<RTQResponse[]>(LOCAL_KEYS.responses, []).find((r) => r.id === id);
+  return memoryStore.responses.find((r) => r.id === id);
 }
 
 export async function saveResponse(response: Omit<RTQResponse, "id">): Promise<RTQResponse> {
@@ -297,7 +253,6 @@ export async function saveResponse(response: Omit<RTQResponse, "id">): Promise<R
   }
 
   const full: RTQResponse = { ...response, id: `resp-${uid()}` };
-  const all = readJSON<RTQResponse[]>(LOCAL_KEYS.responses, []);
-  writeJSON(LOCAL_KEYS.responses, [...all, full]);
+  memoryStore.responses = [...memoryStore.responses, full];
   return full;
 }

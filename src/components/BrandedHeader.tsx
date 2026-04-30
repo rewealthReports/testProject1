@@ -1,15 +1,16 @@
 import type { BrandingProfile } from "../plannerxchange";
 import { Link, useLocation } from "react-router-dom";
 
-/**
- * Returns true only for https: URLs. Rejects javascript:, data:, and any
- * other scheme that could trigger unexpected or unsafe browser behavior.
- * branding.logoUrl is platform-provided, but we validate before render as
- * a defence-in-depth check against misconfigured or unexpected values.
- */
+const APPROVED_LOGO_HOSTS = new Set([
+  "assets.plannerxchange.com",
+  "cdn.plannerxchange.com",
+  "plannerxchange.app",
+]);
+
 function isSafeLogoUrl(url: string): boolean {
   try {
-    return new URL(url).protocol === "https:";
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && APPROVED_LOGO_HOSTS.has(parsed.hostname.toLowerCase());
   } catch {
     return false;
   }
@@ -38,12 +39,6 @@ export function BrandedHeader({ branding }: { branding: BrandingProfile }) {
           <img
             src={branding.logoUrl}
             alt="Firm logo"
-            // DECLARED EXTERNAL EGRESS: rendering logoUrl as an <img> src
-            // causes the browser to fetch from whatever host the branding
-            // asset lives on (typically PlannerXchange CDN or firm-uploaded
-            // storage). This is declared, intentional, and not a fetch() call
-            // originating from app code. referrerPolicy="no-referrer" suppresses
-            // Referer header on that request to limit referrer leakage.
             referrerPolicy="no-referrer"
             className="h-8 max-w-[160px] object-contain"
           />
