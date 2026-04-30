@@ -31,7 +31,7 @@ export interface RTQInvitation {
   firmId: string;
   clientId: string;
   clientDisplayName: string;
-  /** Populated from canonical.client.sensitive.read at invite time. */
+  /** Advisor-entered recipient address; redacted before local preview storage. */
   clientEmail: string;
   /** URL-safe token embedded in the questionnaire link. */
   token: string;

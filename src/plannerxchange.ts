@@ -109,20 +109,18 @@ export interface ShellRuntimeContext {
    */
   initialPath: string;
   /**
-   * Bearer token for the current PX auth session.
-   * Injected by the PlannerXchange shell at runtime; provided by dev-context.ts
-   * in local preview. Pass this as `Authorization: Bearer {idToken}` on all
-   * PX API calls. The app must never create a parallel auth system or store
-   * this token.
+   * Shell-owned PlannerXchange API transport.
+   *
+   * Hosted apps must use this function for PlannerXchange API calls. The shell
+   * attaches auth, tenancy, installation, and governance headers; app code must
+   * not read tokens or construct auth headers itself.
    */
-  idToken: string;
+  authenticatedFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   /**
-   * The base URL for PlannerXchange API calls.
-   * Apps should use this instead of hardcoding API URLs so they work correctly
-   * across dev, staging, and production environments. The shell injects the
-   * correct base URL for the current environment.
+   * Optional local-preview API base used only by dev tooling. The hosted plugin
+   * uses authenticatedFetch with shell-relative PlannerXchange routes.
    */
-  apiBaseUrl: string;
+  apiBaseUrl?: string;
 }
 
 /**
@@ -132,12 +130,9 @@ export interface ShellRuntimeContext {
  * environment tags — so mode detection is correct when the shell loads a
  * published artifact into any environment:
  *
- *   - idToken: a real shell always injects a live Cognito-issued token;
- *              the dev placeholder "synthetic-dev-token" is never injected
- *              by a real shell.
- *   - appInstallationId: a real shell always injects a non-synthetic ID;
- *                        "synthetic-installation-context" is only produced
- *                        by src/dev-context.ts.
+ *   - authenticatedFetch: a real shell injects shell-owned API transport.
+ *   - appInstallationId: a real shell injects a non-synthetic installation ID;
+ *                        "synthetic-installation-context" is local preview only.
  *
  * Use this in place of checking `publicationEnvironment` for mock/live
  * branching so that the published plugin bundle is never gated on a
@@ -145,8 +140,19 @@ export interface ShellRuntimeContext {
  */
 export function isShellHosted(ctx: ShellRuntimeContext): boolean {
   return (
-    Boolean(ctx.idToken) &&
-    ctx.idToken !== "synthetic-dev-token" &&
+    typeof ctx.authenticatedFetch === "function" &&
+    ctx.appInstallationId !== "synthetic-installation-context"
+  );
+}
+
+/**
+ * Returns true when any shell-hosted signal is present. Callers use this for
+ * fail-closed behavior: a partially injected shell context must throw instead
+ * of falling back to local preview storage.
+ */
+export function hasShellRuntimeSignals(ctx: ShellRuntimeContext): boolean {
+  return (
+    typeof ctx.authenticatedFetch === "function" ||
     ctx.appInstallationId !== "synthetic-installation-context"
   );
 }
