@@ -1,30 +1,30 @@
 {
   "schemaVersion": "build_provenance_v1",
-  "sourceInputDigest": "ac3e8d0c9d48db43173b9e84b205b72934b55f6fc69cfbd677bb2501cc10b644",
+  "sourceInputDigest": "b2f3e7db87776dc3c0cf8962a6d9aed47c0ab301641ee66c5142cc7974d6b4bf",
   "buildCommand": "npm run build",
   "packageManager": "npm",
   "nodeVersion": "v20.18.1",
   "builder": {
     "name": "plannerxchange-template-vite-plugin"
   },
-  "aggregateArtifactDigest": "999673e57c8c6f20a833ac01b4bb4379f404e78abc67ddcc6bb1f426f5340718",
+  "aggregateArtifactDigest": "4c10e32780c14506783a9778b05956634ea985888da0c4852092466f824baa0f",
   "dependencyLockfileDigests": [
     {
       "path": "package-lock.json",
-      "sha256": "6eac77c30e7010c672f9eb60e341854d89b28ae0b41115ef97c4600c58d1de17",
-      "sizeBytes": 47321
+      "sha256": "31a791cf6597ea7462f7df891f8825d18e0ba95f1b372e777b46b02bb361fcf1",
+      "sizeBytes": 45703
     }
   ],
   "files": [
     {
       "path": "dist/.vite/manifest.json",
-      "sha256": "df2cf8580803d3ab44706b43247cfcff3f70cfbaf4f3a90ed6d19a21341f248e",
+      "sha256": "880df54461e850450f94d201030b2fd03ac6bb90f4cbfd787d5682ef61599ca6",
       "sizeBytes": 376
     },
     {
-      "path": "dist/assets/plugin-D09COYui.js",
-      "sha256": "c77f6507e9e249a2de05342ba5a889faa26a6b6f6b11eabb29e5bfd96cf47e79",
-      "sizeBytes": 272208
+      "path": "dist/assets/plugin-DV-ZavJQ.js",
+      "sha256": "4e1c7256fd8beeb5402f3085e667d69a149e1f1e4a9b018085422f43ff4025b8",
+      "sizeBytes": 272124
     },
     {
       "path": "dist/assets/plugin-UY-EpuOy.css",
@@ -32,18 +32,18 @@
       "sizeBytes": 25899
     },
     {
-      "path": "dist/assets/preview-5fWIL8hU.js",
-      "sha256": "e550653405fc62abe79543ea1dbe1dd5307944806fc866fe694801f9869f842a",
+      "path": "dist/assets/preview-BfiZHw2n.js",
+      "sha256": "e506d7d2b2ed400d640bb6a017d8ce9034b1b0f2aab7df33e6febbc279e2d200",
       "sizeBytes": 1792
     },
     {
       "path": "dist/index.html",
-      "sha256": "b792bfca31b0ef68cc715ffb1cf5d7e6a94b2f7e50104dbe94cd8bd80b2ea954",
+      "sha256": "345a006fb6f81c2fe799eee2ee5ac547b23e9c62d9c65f90e68524e3177b425e",
       "sizeBytes": 511
     },
     {
       "path": "dist/plannerxchange.publish.json",
-      "sha256": "dcfe72195587fb904547ddeaec8238cdc61963aad810561d21de86c0172e4957",
+      "sha256": "eb61243bd21728cc4e532a5f8da5fb566ed9ae58255fd6ea97a1817a7da55150",
       "sizeBytes": 182
     }
   ]
