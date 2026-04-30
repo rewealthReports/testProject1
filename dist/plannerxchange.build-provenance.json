@@ -1,174 +1,50 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-04-30T14:37:58.848Z",
-  "repository": "https://github.com/rewealthReports/testProject1.git",
-  "commit": "766a9f08fca626af7114e51a486500126dcafa55",
-  "branch": "main",
-  "sourceInputDigest": "caea8804c862bf306885a29ed3228455c63bdd0b23b207d0739e17dfe896cef0",
-  "sourceInputDigests": [
-    {
-      "file": "index.html",
-      "sha256": "4020b3045aaec0cc0ec9475cc36dfacf9ddac295dcd4febb4197b237356430fc"
-    },
-    {
-      "file": "package-lock.json",
-      "sha256": "6eac77c30e7010c672f9eb60e341854d89b28ae0b41115ef97c4600c58d1de17"
-    },
-    {
-      "file": "package.json",
-      "sha256": "393bfe6abfe8433b802d3cb904791caffa65e2052a31f581a06139e534cb2719"
-    },
-    {
-      "file": "plannerxchange.app.json",
-      "sha256": "893aa6d7891211db08b88677324f55237df966fcf97d12b862ff085ad423f9f7"
-    },
-    {
-      "file": "scripts/check-bundle.mjs",
-      "sha256": "c41d1796a18a920645a7fb6e2f2a496c36231b7153d5adc69d1f834d0016f0a7"
-    },
-    {
-      "file": "scripts/finalize-provenance.mjs",
-      "sha256": "c87ded0ba0e60557680d6c88d697e30c83dbb4885573365d3664121529412949"
-    },
-    {
-      "file": "src/App.tsx",
-      "sha256": "a8550bbdd873c92da8c6aaf81cf4f954d75d80e792b4b246ebe873e76ab70371"
-    },
-    {
-      "file": "src/components/BrandedHeader.tsx",
-      "sha256": "0904ca8c57c11f686bfc7f796e3c1da4d52a46d44e3b8095a9a90a4c55d02f7b"
-    },
-    {
-      "file": "src/components/MockBanner.tsx",
-      "sha256": "315004242d1fe0eab14e10d8ea4d1a629625a15854a8e54b0df8553c00d843c4"
-    },
-    {
-      "file": "src/components/Modal.tsx",
-      "sha256": "8a7a3be94c5a2628f0cefeffb651df60440a9c16b08eb97bfab0f1bd511fc62a"
-    },
-    {
-      "file": "src/data/defaultQuestionnaire.ts",
-      "sha256": "ccf5203f7e8f6950ca9d8394cd879193f21c5c33e91299e9d73f5f34dba7312f"
-    },
-    {
-      "file": "src/dev-context.ts",
-      "sha256": "b4c30c3eb25b0c5e9c9699a4895f259f0cd162a0e012b592415f31138cf9f999"
-    },
-    {
-      "file": "src/index.css",
-      "sha256": "f5319cb86704646bab856b75287615616446dc8f597dc355804efcc58f5b5307"
-    },
-    {
-      "file": "src/lib/pxApi.ts",
-      "sha256": "21ce089c76c34e11f1341dbeb056401f1a4f2c913ba1450fd716770336eb736b"
-    },
-    {
-      "file": "src/lib/scoring.ts",
-      "sha256": "5bda80e9aaa5b8fcda7b577324646a47332eb6eb5d5c321bddf0a6d0e33129eb"
-    },
-    {
-      "file": "src/lib/store.ts",
-      "sha256": "0b612b489cd26f81394e073ca76fc8e001118c26e9fd72a3eefd26f86fade7d8"
-    },
-    {
-      "file": "src/main.tsx",
-      "sha256": "0ed9b3fa9883c41eb2100852e423685dc871282ac78dedaced012d6fdf2ba776"
-    },
-    {
-      "file": "src/mock-data.ts",
-      "sha256": "558a2690cbc92bae27f18b3a406eb14f633693e325f0d082c23d4a915b2687fe"
-    },
-    {
-      "file": "src/pages/AdvisorDashboard.tsx",
-      "sha256": "f58c09d373f7c3cb232eb0448c00b92da8697fb53215bd57a60dcb243887eb53"
-    },
-    {
-      "file": "src/pages/QuestionnaireEditor.tsx",
-      "sha256": "30c3018ebb0ff40b64f25336ff18e4d2d906aa760febe5feb101e10ed8ce30e7"
-    },
-    {
-      "file": "src/pages/RTQFlow.tsx",
-      "sha256": "623ba7ab32eedcebf730c3a7817fcee099215dc8fcdbf27d8af84ee6a83e29aa"
-    },
-    {
-      "file": "src/pages/RTQReport.tsx",
-      "sha256": "f4a188e056e787a602c16174a373232262af27f38ead41c0c6b95549a85aa7dd"
-    },
-    {
-      "file": "src/plannerxchange.ts",
-      "sha256": "7cdec8d411c04e49d6d07c92315ae4c785130545364f92bf1ae26c90d5726069"
-    },
-    {
-      "file": "src/plugin.tsx",
-      "sha256": "7c0ba87af3058aec3843f236c7cc0dcee31de0ce8ed8b822efe8d441b1aee456"
-    },
-    {
-      "file": "src/rtq-config.ts",
-      "sha256": "9eeee1cd8990a71700065ba7f332488c60b0d201d8b4533d3a981ad766d67913"
-    },
-    {
-      "file": "src/styles.css",
-      "sha256": "3fa46c75ecf8139b403e6259bef73f230f7f746bf5395f2f83eaac234e688933"
-    },
-    {
-      "file": "src/types/rtq.ts",
-      "sha256": "97f8dbb31d14cc1bda49ecc5a8fab68162f3ec0325a3889e3487ba8826ba719a"
-    },
-    {
-      "file": "tsconfig.json",
-      "sha256": "c10e9d948a37a7c636a467050673c039f533183a551ae9304bcb7f3bf5e37181"
-    },
-    {
-      "file": "vite.config.ts",
-      "sha256": "5974e478d711015309639db2ada3f56526a6bdc3cc1b510fa917936637c84aa5"
-    }
-  ],
-  "lockfileDigests": [
-    {
-      "file": "package-lock.json",
-      "sha256": "6eac77c30e7010c672f9eb60e341854d89b28ae0b41115ef97c4600c58d1de17"
-    }
-  ],
+  "schemaVersion": "build_provenance_v1",
+  "sourceInputDigest": "ac3e8d0c9d48db43173b9e84b205b72934b55f6fc69cfbd677bb2501cc10b644",
+  "buildCommand": "npm run build",
+  "packageManager": "npm",
+  "nodeVersion": "v20.18.1",
+  "builder": {
+    "name": "plannerxchange-template-vite-plugin"
+  },
+  "aggregateArtifactDigest": "999673e57c8c6f20a833ac01b4bb4379f404e78abc67ddcc6bb1f426f5340718",
   "dependencyLockfileDigests": [
     {
-      "file": "package-lock.json",
-      "sha256": "6eac77c30e7010c672f9eb60e341854d89b28ae0b41115ef97c4600c58d1de17"
+      "path": "package-lock.json",
+      "sha256": "6eac77c30e7010c672f9eb60e341854d89b28ae0b41115ef97c4600c58d1de17",
+      "sizeBytes": 47321
     }
   ],
-  "buildCommand": "npm run build",
-  "buildCommandEvidence": {
-    "packageManager": "npm",
-    "script": "build",
-    "commandLine": "npm run build",
-    "postbuild": "node scripts/finalize-provenance.mjs && node scripts/check-bundle.mjs"
-  },
-  "node": "v20.18.1",
-  "viteEntry": "src/plugin.tsx",
-  "aggregateArtifactDigest": "c7e08bc812dffcaf50591282394f4a975d5d765326013353341bf738df290636",
-  "artifactDigests": [
+  "files": [
     {
-      "file": "dist/.vite/manifest.json",
-      "sha256": "df2cf8580803d3ab44706b43247cfcff3f70cfbaf4f3a90ed6d19a21341f248e"
+      "path": "dist/.vite/manifest.json",
+      "sha256": "df2cf8580803d3ab44706b43247cfcff3f70cfbaf4f3a90ed6d19a21341f248e",
+      "sizeBytes": 376
     },
     {
-      "file": "dist/assets/plugin-D09COYui.js",
-      "sha256": "c77f6507e9e249a2de05342ba5a889faa26a6b6f6b11eabb29e5bfd96cf47e79"
+      "path": "dist/assets/plugin-D09COYui.js",
+      "sha256": "c77f6507e9e249a2de05342ba5a889faa26a6b6f6b11eabb29e5bfd96cf47e79",
+      "sizeBytes": 272208
     },
     {
-      "file": "dist/assets/plugin-UY-EpuOy.css",
-      "sha256": "f6102c2a6e6404b638290cfc974c83b64beb0105d742c31f0d7c6b3e2e92bd9f"
+      "path": "dist/assets/plugin-UY-EpuOy.css",
+      "sha256": "f6102c2a6e6404b638290cfc974c83b64beb0105d742c31f0d7c6b3e2e92bd9f",
+      "sizeBytes": 25899
     },
     {
-      "file": "dist/assets/preview-5fWIL8hU.js",
-      "sha256": "e550653405fc62abe79543ea1dbe1dd5307944806fc866fe694801f9869f842a"
+      "path": "dist/assets/preview-5fWIL8hU.js",
+      "sha256": "e550653405fc62abe79543ea1dbe1dd5307944806fc866fe694801f9869f842a",
+      "sizeBytes": 1792
     },
     {
-      "file": "dist/index.html",
-      "sha256": "b792bfca31b0ef68cc715ffb1cf5d7e6a94b2f7e50104dbe94cd8bd80b2ea954"
+      "path": "dist/index.html",
+      "sha256": "b792bfca31b0ef68cc715ffb1cf5d7e6a94b2f7e50104dbe94cd8bd80b2ea954",
+      "sizeBytes": 511
     },
     {
-      "file": "dist/plannerxchange.publish.json",
-      "sha256": "dcfe72195587fb904547ddeaec8238cdc61963aad810561d21de86c0172e4957"
+      "path": "dist/plannerxchange.publish.json",
+      "sha256": "dcfe72195587fb904547ddeaec8238cdc61963aad810561d21de86c0172e4957",
+      "sizeBytes": 182
     }
   ]
 }
