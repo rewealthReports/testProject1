@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-30T13:46:15.280Z",
+  "source": {
+    "repository": "https://github.com/rewealthReports/testProject1.git",
+    "commit": "b688694526174c54288b584077777bb319dd81e2",
+    "branch": "main",
+    "dirty": false
+  },
+  "build": {
+    "command": "npm run build",
+    "node": "v20.18.1",
+    "viteEntry": "src/plugin.tsx"
+  },
+  "artifacts": [
+    {
+      "file": "assets/plugin-CRcSD_K6.js",
+      "sha256": "92c0f7796a98f7380f4e6c3de12767ea78216f6630a1092d09144a6375aa1150"
+    },
+    {
+      "file": "assets/plugin-UY-EpuOy.css",
+      "sha256": "52da760431fc1c0c7fc734f294261ea18541a4a735e0a7b2c42602064a301fa1"
+    },
+    {
+      "file": "assets/preview-DzFSFV2A.js",
+      "sha256": "7b227c8cfb8b7df29a845ff6645791908f746b6a3390b4a8a332a41afefbf641"
+    },
+    {
+      "file": "plannerxchange.publish.json",
+      "sha256": "6a0353a248497934a87a25e39a818dcf43f74d3e6ac32f12e7cb9df3ee26165d"
+    }
+  ]
+}
