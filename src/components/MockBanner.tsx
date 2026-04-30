@@ -5,7 +5,6 @@ export function MockBanner() {
       <span className="opacity-70">-</span>
       <span>
         Local development context. Data is held in memory only.
-        This is <strong>not</strong> a live PlannerXchange installation.
       </span>
     </div>
   );

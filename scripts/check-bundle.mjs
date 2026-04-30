@@ -1,4 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -18,6 +20,76 @@ function walkFiles(dir) {
     const fullPath = resolve(dir, entry.name);
     return entry.isDirectory() ? walkFiles(fullPath) : [fullPath];
   });
+}
+
+function sha256(body) {
+  return createHash("sha256").update(body).digest("hex");
+}
+
+function committedFile(path) {
+  return execFileSync("git", ["show", `HEAD:${path}`], {
+    cwd: repoRoot,
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+}
+
+function fileDigest(path, body) {
+  const buffer = Buffer.from(body);
+  return { path, sha256: sha256(buffer), sizeBytes: buffer.length };
+}
+
+function sortDigests(files) {
+  return files
+    .map((file) => ({ path: file.path, sha256: file.sha256, sizeBytes: file.sizeBytes }))
+    .sort((left, right) => left.path.localeCompare(right.path));
+}
+
+function aggregateDigest(files) {
+  const hash = createHash("sha256");
+  for (const file of sortDigests(files)) {
+    hash.update(file.path, "utf8");
+    hash.update("\0", "utf8");
+    hash.update(file.sha256, "utf8");
+    hash.update("\0", "utf8");
+    hash.update(String(file.sizeBytes), "utf8");
+    hash.update("\n", "utf8");
+  }
+  return hash.digest("hex");
+}
+
+function isDependencyLockfilePath(filePath) {
+  const fileName = filePath.slice(filePath.lastIndexOf("/") + 1);
+  return ["package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb"].includes(fileName);
+}
+
+function isBuildInputPath(filePath) {
+  const fileName = filePath.slice(filePath.lastIndexOf("/") + 1);
+  if (
+    filePath.startsWith("dist/") ||
+    filePath.startsWith("node_modules/") ||
+    filePath.startsWith(".git/") ||
+    filePath.startsWith("build/") ||
+    filePath.startsWith("coverage/")
+  ) {
+    return false;
+  }
+  return (
+    filePath === "plannerxchange.app.json" ||
+    filePath === "package.json" ||
+    isDependencyLockfilePath(filePath) ||
+    fileName === "index.html" ||
+    fileName === "tsconfig.json" ||
+    fileName.startsWith("vite.config.") ||
+    filePath.startsWith("src/") ||
+    filePath.startsWith("public/")
+  );
+}
+
+function gitFiles() {
+  return execFileSync("git", ["ls-files"], { cwd: repoRoot, encoding: "utf8" })
+    .trim()
+    .split(/\r?\n/)
+    .filter(Boolean);
 }
 
 if (!existsSync(distAssets)) {
@@ -94,6 +166,25 @@ for (const field of [
   if (!provenance[field]) {
     fail(`build provenance is missing ${field}.`);
   }
+}
+
+const trackedFiles = gitFiles();
+const expectedSourceDigest = aggregateDigest(
+  trackedFiles
+    .filter(isBuildInputPath)
+    .map((path) => fileDigest(path, committedFile(path)))
+);
+if (provenance.sourceInputDigest !== expectedSourceDigest) {
+  fail("build provenance sourceInputDigest does not match committed source inputs.");
+}
+
+const expectedLockfiles = sortDigests(
+  trackedFiles
+    .filter(isDependencyLockfilePath)
+    .map((path) => fileDigest(path, committedFile(path)))
+);
+if (JSON.stringify(provenance.dependencyLockfileDigests) !== JSON.stringify(expectedLockfiles)) {
+  fail("build provenance dependencyLockfileDigests do not match committed lockfiles.");
 }
 
 console.log(`check:bundle passed - ${pluginFiles[0]} is publish-review clean`);

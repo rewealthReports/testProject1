@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
@@ -31,6 +32,21 @@ function createFileDigest(path: string, body: string | Uint8Array): FileDigest {
     sha256: sha256Hex(buffer),
     sizeBytes: buffer.length
   };
+}
+
+function readCommittedFile(path: string): Buffer | null {
+  try {
+    return execFileSync("git", ["show", `HEAD:${path}`], {
+      cwd: rootDir,
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+  } catch {
+    return null;
+  }
+}
+
+function createCommittedFileDigest(path: string, fallbackBody: Buffer): FileDigest {
+  return createFileDigest(path, readCommittedFile(path) ?? fallbackBody);
 }
 
 function sortFileDigests(files: FileDigest[]): FileDigest[] {
@@ -125,7 +141,7 @@ function readBuildInputDigests(): FileDigest[] {
         relPath: normalizeRelativePath(relative(rootDir, filePath))
       }))
       .filter((file) => isBuildInputPath(file.relPath))
-      .map((file) => createFileDigest(file.relPath, readFileSync(file.fullPath)))
+      .map((file) => createCommittedFileDigest(file.relPath, readFileSync(file.fullPath)))
   );
 }
 
@@ -133,7 +149,7 @@ function readLockfileDigests(): FileDigest[] {
   return sortFileDigests(
     ["package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb"]
       .filter((filePath) => existsSync(resolve(rootDir, filePath)))
-      .map((filePath) => createFileDigest(filePath, readFileSync(resolve(rootDir, filePath))))
+      .map((filePath) => createCommittedFileDigest(filePath, readFileSync(resolve(rootDir, filePath))))
   );
 }
 
