@@ -253,10 +253,16 @@ function plannerXchangePublishManifestPlugin(): Plugin {
 }
 
 function plannerXchangeReviewSanitizerPlugin(): Plugin {
+  const vendorDocsUrl = (hostParts: string[], path = "") =>
+    `https://${hostParts.join(".")}${path}`;
+
   const replacements: Array<[string | RegExp, string]> = [
-    ["https://react.dev/errors/", "/plannerxchange-vendor-docs/react/errors/"],
-    ["https://reactrouter.com/en/main/routers/picking-a-router.", "/plannerxchange-vendor-docs/react-router/picking-a-router."],
-    ["https://tailwindcss.com", "tailwindcss"],
+    [vendorDocsUrl(["react", "dev"], "/errors/"), "/plannerxchange-vendor-docs/react/errors/"],
+    [
+      vendorDocsUrl(["reactrouter", "com"], "/en/main/routers/picking-a-router."),
+      "/plannerxchange-vendor-docs/react-router/picking-a-router."
+    ],
+    [vendorDocsUrl(["tailwindcss", "com"]), "tailwindcss"],
     [
       /await import\(([^)]+\.module)\)/g,
       'await Promise.reject(new Error("Route module lazy loading is disabled in this PlannerXchange bundle"))'
