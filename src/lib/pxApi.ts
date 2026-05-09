@@ -87,8 +87,12 @@ export async function sendTransactionalEmail(
 
   await delay(300);
   console.info(
-    "[DEV /app-email/send] No shell-owned PlannerXchange transport; email not sent. Payload:\n",
-    JSON.stringify(payload, null, 2)
+    "[DEV /app-email/send] No shell-owned PlannerXchange transport; email not sent.",
+    {
+      subject: payload.subject,
+      clientUserId: payload.clientUserId,
+      appRecordId: payload.appRecordId,
+    }
   );
   return { messageId: "dev-mock-" + Date.now(), sentAt: new Date().toISOString(), status: "dev_logged" };
 }
