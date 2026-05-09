@@ -1,6 +1,6 @@
 {
   "schemaVersion": "build_provenance_v1",
-  "sourceInputDigest": "112358fd69df65dfcbe6337719ef9d3e7ca9134eecb14e9638668633c7efe05a",
+  "sourceInputDigest": "5b1f96cc3977cd5445e44442c169dadbb688d08efcae46f7a1740bb5d8a48c42",
   "buildCommand": "npm run build",
   "packageManager": "npm",
   "nodeVersion": "v22.22.0",
