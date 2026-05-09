@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import type { BrandingProfile, LegalProfile, PlannerXchangeManifest, ShellRuntimeContext } from "./plannerxchange";
 import { isShellHosted } from "./plannerxchange";
 import { MockBanner } from "./components/MockBanner";
@@ -46,11 +46,12 @@ export function App({
   // automatically receive the resolved values.
   const activeContext: ShellRuntimeContext = { ...context, branding, legal };
 
-  // The shell-provided basename scopes all in-app routing to /apps/<slug>.
+  // The shell-provided basename scopes all in-app routing to this installation.
   // BrowserRouter (not MemoryRouter) is required so deep links and browser
   // history work correctly per the PlannerXchange builder checklist.
   return (
     <BrowserRouter basename={activeContext.appBasename}>
+      <ShellRouteBridge context={activeContext} />
       {!isShellHosted(activeContext) && <MockBanner />}
 
       {/*
@@ -78,4 +79,53 @@ export function App({
       </Routes>
     </BrowserRouter>
   );
+}
+
+function ShellRouteBridge({ context }: { context: ShellRuntimeContext }): null {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const initializedRef = useRef(false);
+  const skipNextShellSyncRef = useRef(true);
+  const lastShellPathRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (initializedRef.current) return;
+
+    initializedRef.current = true;
+    const initialPath = normalizeAppPath(context.initialPath);
+    const currentPath = normalizeAppPath(formatLocation(location));
+
+    lastShellPathRef.current = initialPath;
+    skipNextShellSyncRef.current = initialPath !== currentPath;
+
+    if (initialPath !== currentPath) {
+      navigate(initialPath, { replace: true });
+    }
+  }, [context.initialPath, location, navigate]);
+
+  useEffect(() => {
+    if (!initializedRef.current) return;
+
+    if (skipNextShellSyncRef.current) {
+      skipNextShellSyncRef.current = false;
+      return;
+    }
+
+    const currentPath = normalizeAppPath(formatLocation(location));
+    if (currentPath === lastShellPathRef.current) return;
+
+    lastShellPathRef.current = currentPath;
+    context.navigate?.(currentPath);
+  }, [context, location.pathname, location.search, location.hash]);
+
+  return null;
+}
+
+function formatLocation(location: { pathname: string; search: string; hash: string }): string {
+  return `${location.pathname}${location.search}${location.hash}`;
+}
+
+function normalizeAppPath(path: string | undefined): string {
+  const source = path?.trim() || "/";
+  return source.startsWith("/") ? source : `/${source}`;
 }

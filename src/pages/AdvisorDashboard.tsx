@@ -49,12 +49,13 @@ export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) 
       const invitation = await createInvitation(
         context.firmId,
         client.id,
+        client.householdId,
         client.displayName,
         inviteEmail
       );
       await reload();
 
-      const basePath = context.appBasename ? context.appBasename : "";
+      const basePath = (context.shellAppBasename ?? context.appBasename ?? "").replace(/\/$/, "");
       const questionnaireUrl = `${window.location.origin}${basePath}/rtq/${invitation.token}`;
 
       await sendTransactionalEmail(context, {

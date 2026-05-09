@@ -140,7 +140,8 @@ if (externalHits.length > 0) {
   fail(`blocked external host reference(s) found:\n  ${externalHits.join("\n  ")}`);
 }
 
-if (/import\([^"'`]/.test(pluginBundle)) {
+const dynamicImportPattern = new RegExp("import\\([^\"'`]", "u");
+if (dynamicImportPattern.test(pluginBundle)) {
   fail(`non-literal dynamic import expression found in ${pluginFiles[0]}`);
 }
 

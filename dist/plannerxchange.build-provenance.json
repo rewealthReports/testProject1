@@ -3,11 +3,11 @@
   "sourceInputDigest": "b2f3e7db87776dc3c0cf8962a6d9aed47c0ab301641ee66c5142cc7974d6b4bf",
   "buildCommand": "npm run build",
   "packageManager": "npm",
-  "nodeVersion": "v20.18.1",
+  "nodeVersion": "v22.22.0",
   "builder": {
     "name": "plannerxchange-template-vite-plugin"
   },
-  "aggregateArtifactDigest": "4c10e32780c14506783a9778b05956634ea985888da0c4852092466f824baa0f",
+  "aggregateArtifactDigest": "73436082ca07560ca9a5e64dc727a247cb98805c88da089ed78dc40797c58a6f",
   "dependencyLockfileDigests": [
     {
       "path": "package-lock.json",
@@ -18,13 +18,13 @@
   "files": [
     {
       "path": "dist/.vite/manifest.json",
-      "sha256": "880df54461e850450f94d201030b2fd03ac6bb90f4cbfd787d5682ef61599ca6",
+      "sha256": "55774e1f1e7c91d89cb1f56f728580f065f313f6f9a87e21006080dea583dc5f",
       "sizeBytes": 376
     },
     {
-      "path": "dist/assets/plugin-DV-ZavJQ.js",
-      "sha256": "4e1c7256fd8beeb5402f3085e667d69a149e1f1e4a9b018085422f43ff4025b8",
-      "sizeBytes": 272124
+      "path": "dist/assets/plugin-C_NCA1KX.js",
+      "sha256": "06bd95eccf725b233e80d758ce27b0360396eec461ec94c87ff01b87efe5c697",
+      "sizeBytes": 274088
     },
     {
       "path": "dist/assets/plugin-UY-EpuOy.css",
@@ -32,18 +32,18 @@
       "sizeBytes": 25899
     },
     {
-      "path": "dist/assets/preview-BfiZHw2n.js",
-      "sha256": "e506d7d2b2ed400d640bb6a017d8ce9034b1b0f2aab7df33e6febbc279e2d200",
+      "path": "dist/assets/preview-DyVbdsJI.js",
+      "sha256": "23b31bb35393a1ae7d8e39e3d5283e01fb4bec17b53398db0d029bd56f8db92f",
       "sizeBytes": 1792
     },
     {
       "path": "dist/index.html",
-      "sha256": "345a006fb6f81c2fe799eee2ee5ac547b23e9c62d9c65f90e68524e3177b425e",
+      "sha256": "9174d11ee75c8f3c3e3c5eb834225d05815c51c8bf79414c8dc19f4692b1b831",
       "sizeBytes": 511
     },
     {
       "path": "dist/plannerxchange.publish.json",
-      "sha256": "eb61243bd21728cc4e532a5f8da5fb566ed9ae58255fd6ea97a1817a7da55150",
+      "sha256": "a0f3f1c3c56248401d2ad2a6b61638767cab0536163c3c9ec467192841610fb9",
       "sizeBytes": 182
     }
   ]

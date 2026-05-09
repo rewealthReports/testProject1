@@ -101,7 +101,7 @@ export const mockResponseSeeds: AppDataRecord<QuestionnaireResponsePayload>[] = 
     appInstallationId: "rtq-installation-dev",
     firmId: "north-harbor-advisors",
     householdId: "hh_nelson",
-    clientUserId: null,
+    clientUserId: "cl_lena_nelson",
     accountId: null,
     sourceRefs: [
       {

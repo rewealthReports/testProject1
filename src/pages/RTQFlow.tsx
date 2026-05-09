@@ -148,6 +148,7 @@ export function RTQFlow({ context }: { context: ShellRuntimeContext }) {
       firmId: context.firmId,
       invitationId: invitation.id,
       clientId: invitation.clientId,
+      householdId: invitation.householdId,
       clientDisplayName: invitation.clientDisplayName,
       answers: answerList,
       score,

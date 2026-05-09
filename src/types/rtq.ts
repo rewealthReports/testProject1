@@ -30,6 +30,7 @@ export interface RTQInvitation {
   id: string;
   firmId: string;
   clientId: string;
+  householdId?: string;
   clientDisplayName: string;
   /** Advisor-entered recipient address; redacted before local preview storage. */
   clientEmail: string;
@@ -71,6 +72,7 @@ export interface RTQResponse {
   firmId: string;
   invitationId: string;
   clientId: string;
+  householdId?: string;
   clientDisplayName: string;
   answers: RTQAnswer[];
   score: RTQScoreResult;

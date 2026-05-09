@@ -8,6 +8,32 @@ export type AppVisibility =
 export type AppDataPortabilityMode =
   | "plannerxchange_portable"
   | "app_managed_nonportable";
+export type AppEgressDataClass =
+  | "public"
+  | "internal"
+  | "confidential"
+  | "restricted_pii"
+  | "firm_data"
+  | "client_summary"
+  | "client_sensitive"
+  | "crm_activity"
+  | "account_data"
+  | "portfolio_positions"
+  | "transactions"
+  | "cost_basis"
+  | "app_work_product";
+export type AppDataIngressSource =
+  | "csv_upload"
+  | "file_upload"
+  | "third_party_api"
+  | "manual_paste"
+  | "browser_file_parse"
+  | "other";
+export type AppDataIngressTarget =
+  | "px_core_import_handoff"
+  | "px_app_data_upload"
+  | "browser_ephemeral_app_data"
+  | "enterprise_external_exception";
 // Legacy summary-safe client-user routes and current canonical entity routes
 // use different scope families. Student apps should prefer the `canonical.*`
 // scopes when targeting `/canonical/*` APIs.
@@ -63,6 +89,28 @@ export interface LegalProfile {
   termsUrl?: string;
 }
 
+export interface AppDataIngressDeclaration {
+  source: AppDataIngressSource;
+  purpose: string;
+  dataClasses: AppEgressDataClass[];
+  target: AppDataIngressTarget;
+  canonicalMutation?: boolean;
+  retention?: string;
+  notes?: string;
+}
+
+export interface AppEgressDeclaration {
+  host: string;
+  purpose: string;
+  dataClasses: AppEgressDataClass[];
+  processorName: string;
+  processorRole?: "processor" | "subprocessor" | "independent_controller" | "unknown";
+  country?: string;
+  transferMechanism?: string;
+  retention?: string;
+  notes?: string;
+}
+
 export interface PlannerXchangeManifest {
   slug: string;
   name: string;
@@ -78,8 +126,19 @@ export interface PlannerXchangeManifest {
   configSchemaVersion: number;
   visibility: AppVisibility;
   dataPortabilityMode: AppDataPortabilityMode;
+  egressDeclarations?: AppEgressDeclaration[];
+  dataIngressDeclarations?: AppDataIngressDeclaration[];
   categories: string[];
 }
+
+export interface PlannerXchangeNavigationOptions {
+  replace?: boolean;
+}
+
+export type PlannerXchangeNavigate = (
+  path: string,
+  options?: PlannerXchangeNavigationOptions
+) => void;
 
 export interface ShellRuntimeContext {
   tenantId: string;
@@ -97,11 +156,16 @@ export interface ShellRuntimeContext {
   branding: BrandingProfile;
   legal: LegalProfile;
   /**
-   * The shell-scoped path prefix for this app, e.g. "/apps/my-tool".
+   * The runtime-document path prefix for this app.
    * Use this as the `basename` for your client-side router so in-app
-   * navigation stays within the shell-owned URL space.
+   * navigation stays within the current PlannerXchange runtime.
    */
   appBasename: string;
+  /**
+   * The shell-owned path prefix for this app. Use this only for shell-level
+   * deep links or copyable URLs when it differs from the runtime document path.
+   */
+  shellAppBasename?: string;
   /**
    * The current in-app path relative to `appBasename`, e.g. "/households/abc123".
    * Initialize your router at this path so deep links render the correct view.
@@ -116,6 +180,12 @@ export interface ShellRuntimeContext {
    * not read tokens or construct auth headers itself.
    */
   authenticatedFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  /**
+   * Requests a shell URL update for an app-relative route such as
+   * "/households/abc123". The shell validates the path and keeps navigation
+   * scoped to this app installation.
+   */
+  navigate?: PlannerXchangeNavigate;
   /**
    * Optional local-preview API base used only by dev tooling. The hosted plugin
    * uses authenticatedFetch with shell-relative PlannerXchange routes.
@@ -201,7 +271,13 @@ export interface ListResponse<T> {
 
 /** Source reference linking an app-data record to a canonical entity */
 export interface SourceRef {
-  sourceType: "canonical_household" | "canonical_client" | "canonical_account" | "manual_entry" | (string & {});
+  sourceType:
+    | "canonical_household"
+    | "canonical_client"
+    | "canonical_account"
+    | "app_owned_upload"
+    | "manual_entry"
+    | (string & {});
   sourceId: string;
   asOf: string;
 }

@@ -14,6 +14,7 @@
 import type { RTQInvitation, RTQResponse, RTQTemplate } from "../types/rtq";
 import { DEFAULT_QUESTIONNAIRE } from "../data/defaultQuestionnaire";
 import { hasShellRuntimeSignals, isShellHosted } from "../plannerxchange";
+import type { SourceRef } from "../plannerxchange";
 import type { ShellRuntimeContext } from "../plannerxchange";
 
 let _ctx: ShellRuntimeContext | null = null;
@@ -70,7 +71,22 @@ type LiveShellRuntimeContext = ShellRuntimeContext & {
 
 interface PXRecord<T> {
   recordId: string;
+  clientUserId?: string | null;
+  householdId?: string | null;
+  accountId?: string | null;
+  sourceRefs?: SourceRef[];
   payload: T;
+}
+
+type AppDataRecordStatus = "draft" | "final" | "archived";
+
+interface AppDataAssociation {
+  title?: string;
+  status?: AppDataRecordStatus;
+  clientUserId?: string | null;
+  householdId?: string | null;
+  accountId?: string | null;
+  sourceRefs?: SourceRef[];
 }
 
 function liveContext(): LiveShellRuntimeContext {
@@ -107,8 +123,23 @@ async function pxGetById<T>(recordId: string): Promise<PXRecord<T> | undefined> 
   return res.json() as Promise<PXRecord<T>>;
 }
 
-async function pxCreate<T>(recordType: string, payload: T): Promise<PXRecord<T>> {
-  const body = { recordType, schemaVersion: 1, firmId: ctx().firmId, payload };
+async function pxCreate<T>(
+  recordType: string,
+  payload: T,
+  association: AppDataAssociation = {}
+): Promise<PXRecord<T>> {
+  const body = {
+    recordType,
+    title: association.title ?? recordType,
+    status: association.status ?? "draft",
+    schemaVersion: 1,
+    firmId: ctx().firmId,
+    clientUserId: association.clientUserId ?? null,
+    householdId: association.householdId ?? null,
+    accountId: association.accountId ?? null,
+    sourceRefs: association.sourceRefs ?? [],
+    payload
+  };
   const res = await pxFetch("/app-data", {
     method: "POST",
     body: JSON.stringify(body),
@@ -117,16 +148,51 @@ async function pxCreate<T>(recordType: string, payload: T): Promise<PXRecord<T>>
   return res.json() as Promise<PXRecord<T>>;
 }
 
-async function pxPatch<T>(recordId: string, payloadPatch: Partial<T>): Promise<void> {
+async function pxPatch<T>(
+  recordId: string,
+  payloadPatch: Partial<T>,
+  association: AppDataAssociation = {}
+): Promise<void> {
   const res = await pxFetch(`/app-data/${encodeURIComponent(recordId)}`, {
     method: "PATCH",
-    body: JSON.stringify({ payload: payloadPatch }),
+    body: JSON.stringify({ ...association, payload: payloadPatch }),
   });
   if (!res.ok) throw new Error(`[store] PATCH /app-data/${recordId} failed: ${res.status}`);
 }
 
 function uid(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function clientWorkProductAssociation({
+  clientUserId,
+  householdId,
+  title,
+  status = "draft",
+  asOf = new Date().toISOString(),
+}: {
+  clientUserId: string;
+  householdId?: string;
+  title: string;
+  status?: AppDataRecordStatus;
+  asOf?: string;
+}): AppDataAssociation {
+  const sourceRefs: SourceRef[] = [
+    ...(householdId
+      ? [{ sourceType: "canonical_household" as const, sourceId: householdId, asOf }]
+      : []),
+    { sourceType: "canonical_client", sourceId: clientUserId, asOf },
+    { sourceType: "manual_entry", sourceId: "risk-tolerance-questionnaire", asOf },
+  ];
+
+  return {
+    title,
+    status,
+    clientUserId,
+    householdId: householdId ?? null,
+    accountId: null,
+    sourceRefs,
+  };
 }
 
 export async function getTemplate(firmId: string): Promise<RTQTemplate> {
@@ -154,7 +220,17 @@ export async function saveTemplate(template: RTQTemplate): Promise<RTQTemplate> 
       await pxPatch<RTQTemplate>(updated.id, updated);
       return updated;
     }
-    const record = await pxCreate<RTQTemplate>("rtq_template", updated);
+    const record = await pxCreate<RTQTemplate>("rtq_template", updated, {
+      title: "Risk tolerance questionnaire template",
+      status: "draft",
+      sourceRefs: [
+        {
+          sourceType: "manual_entry",
+          sourceId: "risk-tolerance-questionnaire-template",
+          asOf: updated.updatedAt,
+        },
+      ],
+    });
     return { ...record.payload, id: record.recordId };
   }
 
@@ -176,6 +252,7 @@ export async function getInvitations(firmId: string): Promise<RTQInvitation[]> {
 export async function createInvitation(
   firmId: string,
   clientId: string,
+  householdId: string | undefined,
   clientDisplayName: string,
   clientEmail: string,
 ): Promise<RTQInvitation> {
@@ -183,6 +260,7 @@ export async function createInvitation(
     id: `inv-${uid()}`,
     firmId,
     clientId,
+    householdId,
     clientDisplayName,
     clientEmail,
     token: uid(),
@@ -191,7 +269,15 @@ export async function createInvitation(
   };
 
   if (isLive()) {
-    const record = await pxCreate<RTQInvitation>("rtq_invitation", invitation);
+    const record = await pxCreate<RTQInvitation>(
+      "rtq_invitation",
+      invitation,
+      clientWorkProductAssociation({
+        clientUserId: clientId,
+        householdId,
+        title: `${clientDisplayName} risk tolerance questionnaire invitation`,
+      })
+    );
     return { ...record.payload, id: record.recordId };
   }
 
@@ -211,11 +297,20 @@ export async function getInvitationByToken(token: string): Promise<RTQInvitation
 
 export async function markInvitationCompleted(invitationId: string, responseId: string): Promise<void> {
   if (isLive()) {
-    await pxPatch<Partial<RTQInvitation>>(invitationId, {
+    const invitationRecord = await pxGetById<RTQInvitation>(invitationId);
+    if (!invitationRecord) throw new Error(`[store] invitation ${invitationId} was not found.`);
+    const invitation = invitationRecord.payload;
+
+    await pxPatch<RTQInvitation>(invitationId, {
       status: "completed",
       completedAt: new Date().toISOString(),
       responseId,
-    });
+    }, clientWorkProductAssociation({
+      clientUserId: invitation.clientId,
+      householdId: invitation.householdId,
+      title: `${invitation.clientDisplayName} risk tolerance questionnaire invitation`,
+      status: "final",
+    }));
     return;
   }
 
@@ -248,7 +343,16 @@ export async function getResponseById(id: string): Promise<RTQResponse | undefin
 
 export async function saveResponse(response: Omit<RTQResponse, "id">): Promise<RTQResponse> {
   if (isLive()) {
-    const record = await pxCreate<RTQResponse>("rtq_response", { ...response, id: "" });
+    const record = await pxCreate<RTQResponse>(
+      "rtq_response",
+      { ...response, id: "" },
+      clientWorkProductAssociation({
+        clientUserId: response.clientId,
+        householdId: response.householdId,
+        title: `${response.clientDisplayName} risk tolerance profile`,
+        status: "final",
+      })
+    );
     return { ...record.payload, id: record.recordId };
   }
 
