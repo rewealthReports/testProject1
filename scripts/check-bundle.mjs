@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -18,7 +18,9 @@ function walkFiles(dir) {
   const entries = readdirSync(dir, { withFileTypes: true });
   return entries.flatMap((entry) => {
     const fullPath = resolve(dir, entry.name);
-    return entry.isDirectory() ? walkFiles(fullPath) : [fullPath];
+    if (entry.isDirectory()) return walkFiles(fullPath);
+    if (entry.isFile()) return [fullPath];
+    return [];
   });
 }
 
@@ -127,7 +129,6 @@ const blockedExternalHosts = [
 
 const externalHits = [];
 for (const file of walkFiles(distDir)) {
-  if (!statSync(file).isFile()) continue;
   const content = readFileSync(file, "utf8");
   for (const host of blockedExternalHosts) {
     if (content.includes(host)) {

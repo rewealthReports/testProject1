@@ -253,30 +253,34 @@ function plannerXchangePublishManifestPlugin(): Plugin {
 }
 
 function plannerXchangeReviewSanitizerPlugin(): Plugin {
-  const replacements: Array<[RegExp, string]> = [
-    [/https:\/\/react\.dev\/errors\//g, "/plannerxchange-vendor-docs/react/errors/"],
-    [/https:\/\/reactrouter\.com\/en\/main\/routers\/picking-a-router\./g, "/plannerxchange-vendor-docs/react-router/picking-a-router."],
-    [/https:\/\/tailwindcss\.com/g, "tailwindcss"],
+  const replacements: Array<[string | RegExp, string]> = [
+    ["https://react.dev/errors/", "/plannerxchange-vendor-docs/react/errors/"],
+    ["https://reactrouter.com/en/main/routers/picking-a-router.", "/plannerxchange-vendor-docs/react-router/picking-a-router."],
+    ["https://tailwindcss.com", "tailwindcss"],
     [
       /await import\(([^)]+\.module)\)/g,
       'await Promise.reject(new Error("Route module lazy loading is disabled in this PlannerXchange bundle"))'
     ]
   ];
 
+  function applyReviewReplacements(source: string): string {
+    let sanitized = source;
+    for (const [pattern, replacement] of replacements) {
+      sanitized = typeof pattern === "string"
+        ? sanitized.split(pattern).join(replacement)
+        : sanitized.replace(pattern, replacement);
+    }
+    return sanitized;
+  }
+
   return {
     name: "plannerxchange-review-sanitizer",
     generateBundle(_, bundle) {
       for (const asset of Object.values(bundle)) {
         if (asset.type === "chunk") {
-          for (const [pattern, replacement] of replacements) {
-            asset.code = asset.code.replace(pattern, replacement);
-          }
+          asset.code = applyReviewReplacements(asset.code);
         } else if (typeof asset.source === "string") {
-          let source = asset.source;
-          for (const [pattern, replacement] of replacements) {
-            source = source.replace(pattern, replacement);
-          }
-          asset.source = source;
+          asset.source = applyReviewReplacements(asset.source);
         }
       }
     }
