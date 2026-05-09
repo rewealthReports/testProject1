@@ -116,7 +116,7 @@ export function AdvisorDashboard({ context }: { context: ShellRuntimeContext }) 
           <p className="font-medium">
             Invitation created!{" "}
             <span className="font-normal opacity-80">
-              Mock mode: email logged to console, not delivered.
+              Mock mode: email delivery skipped.
             </span>
           </p>
           <p className="text-xs text-green-700">
