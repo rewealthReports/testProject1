@@ -1,13 +1,13 @@
 {
   "schemaVersion": "build_provenance_v1",
-  "sourceInputDigest": "820e21f0e8b93a296ba7d1341c2f40f997e4533918c8d1d9ffa48a5f44ff7b64",
+  "sourceInputDigest": "215a2319d9f04d7bc47951ecbc875019e1c8fffd9f7a53c72fcb8171614329d5",
   "buildCommand": "npm run build",
   "packageManager": "npm",
   "nodeVersion": "v22.22.0",
   "builder": {
     "name": "plannerxchange-template-vite-plugin"
   },
-  "aggregateArtifactDigest": "88392c0faa69b223ccb6b469f41152b5aa6a11c6f7adab7d3b21d79dd0326e5b",
+  "aggregateArtifactDigest": "bcb8370fce11798da903cb52407de6eb6eff055466df55c04043f0359c092554",
   "dependencyLockfileDigests": [
     {
       "path": "package-lock.json",
@@ -18,13 +18,13 @@
   "files": [
     {
       "path": "dist/.vite/manifest.json",
-      "sha256": "f6f8c5b1d5a367e6224d312a2a4040aa92b2cd44e1ed9a0eda94478589587bb6",
+      "sha256": "8a95a18bcd22497b9f014c28f2966456c0a1fd0e3bf77b81c20cb6d84b1c0b2c",
       "sizeBytes": 376
     },
     {
-      "path": "dist/assets/plugin-DGSCH6dv.js",
-      "sha256": "d1d35ff30bb09723cb23d6777b455777b4e01e8b6263b0c9db5a4711d1c65fde",
-      "sizeBytes": 274127
+      "path": "dist/assets/plugin-DkD13UAj.js",
+      "sha256": "ab67b6dbee26e4976f8b1089b7573b8555a416652d1380112914c7386bfb89d9",
+      "sizeBytes": 273943
     },
     {
       "path": "dist/assets/plugin-UY-EpuOy.css",
@@ -32,18 +32,18 @@
       "sizeBytes": 25899
     },
     {
-      "path": "dist/assets/preview-DnXAAZRU.js",
-      "sha256": "0952cb623afc6631dbdc0dffdb4a7e64bb6b3ed177da8eb850a48e782f5cc478",
+      "path": "dist/assets/preview-UlTLImnF.js",
+      "sha256": "ee564f1b3645e71d75fd2f1880707a9aed568d2d3ee4497e5b20685be9ddedd9",
       "sizeBytes": 1792
     },
     {
       "path": "dist/index.html",
-      "sha256": "6c134bd3c7ac76dac4d233377974b8923127628cec05b6fc417c0cbe80eb24a2",
+      "sha256": "7891f65e217e269017a8aee6cf616f72152e59273afef6135d61e62a3052421f",
       "sizeBytes": 511
     },
     {
       "path": "dist/plannerxchange.publish.json",
-      "sha256": "a5410b7fdab96b1e1671bba82986a77b23b56761899999149f4ca994a471f301",
+      "sha256": "e1a1b04480f228a25306064ff90afb758242c60da5bc4fddea0802665d4e343f",
       "sizeBytes": 182
     }
   ]
